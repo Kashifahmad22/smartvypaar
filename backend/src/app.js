@@ -1,48 +1,98 @@
-const authRoutes = require("./routes/authRoutes");
+require("dotenv").config();
+
 const express = require("express");
 const mongoose = require("mongoose");
+const helmet = require("helmet");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 
+const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
 const saleRoutes = require("./routes/saleRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
+const errorMiddleware = require("./middleware/errorMiddleware");
+
+/* ==============================
+   ENVIRONMENT VALIDATION
+============================== */
+
+if (!process.env.MONGO_URI) {
+  throw new Error("MONGO_URI is not defined in environment variables");
+}
+
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET is not defined in environment variables");
+}
+
+if (!process.env.FRONTEND_URL && process.env.NODE_ENV === "production") {
+  throw new Error("FRONTEND_URL must be defined in production");
+}
 
 const app = express();
 
-app.use(cors({
-  origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  credentials: true
-}));
+/* ==============================
+   SECURITY MIDDLEWARE
+============================== */
+
+// Secure HTTP headers
+app.use(helmet());
+
+// CORS (must come before rate limiter)
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    credentials: true,
+  })
+);
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: "fail",
+    message: "Too many requests, please try again later.",
+  },
+});
+
+app.use(limiter);
 
 app.use(express.json());
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB Connected"))
-  .catch((err) => console.log(err));
+/* ==============================
+   DATABASE CONNECTION
+============================== */
 
-// Register routes
-app.use("/api/products", productRoutes);
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    if (process.env.NODE_ENV !== "production") {
+      console.log("MongoDB Connected");
+    }
+  })
+  .catch((err) => {
+    console.error("MongoDB Connection Error:", err.message);
+    process.exit(1);
+  });
 
-// Test route
+/* ==============================
+   ROUTES
+============================== */
+
 app.get("/", (req, res) => {
   res.send("SV backend is running 🚀");
 });
 
-
 app.use("/api/auth", authRoutes);
-
-
+app.use("/api/products", productRoutes);
 app.use("/api/sales", saleRoutes);
-
-
-//For analyticsnpm start
-
-
 app.use("/api/analytics", analyticsRoutes);
 
-const errorMiddleware = require("./middleware/errorMiddleware");
+/* ==============================
+   GLOBAL ERROR HANDLER
+============================== */
 
 app.use(errorMiddleware);
 
