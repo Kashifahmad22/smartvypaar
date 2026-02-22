@@ -1,7 +1,13 @@
-import axios from "axios";
-import { useEffect, useState } from "react";
-import { getDashboardStats } from "../services/api";
+import {
+  getDashboardStats,
+  getLowStockProducts,
+  getTopProducts,
+  getUpcomingExpiry,
+  getWeeklyProfit,
+  getBusinessHealth
+} from "../services/api";
 
+import { useEffect, useState } from "react";
 import RevenueChart from "../components/RevenueChart";
 import ProfitChart from "../components/ProfitChart";
 import BusinessHealthCard from "../components/BusinessHealthCard";
@@ -19,11 +25,11 @@ function Dashboard() {
     const fetchData = async () => {
       try {
         const dashboard = await getDashboardStats();
-        const low = await axios.get("http://localhost:5000/api/products/low-stock");
-        const top = await axios.get("http://localhost:5000/api/analytics/top-products");
-        const expiry = await axios.get("http://localhost:5000/api/products/upcoming-expiry");
-        const profit = await axios.get("http://localhost:5000/api/analytics/weekly-profit");
-        const healthRes = await axios.get("http://localhost:5000/api/analytics/business-health");
+        const low = await getLowStockProducts();
+        const top = await getTopProducts();
+        const expiry = await getUpcomingExpiry();
+        const profit = await getWeeklyProfit();
+        const healthRes = await getBusinessHealth();
 
         setStats(dashboard.data);
         setLowStock(low.data);
@@ -31,6 +37,7 @@ function Dashboard() {
         setExpiring(expiry.data);
         setProfitData(profit.data);
         setHealth(healthRes.data);
+
       } catch (err) {
         console.error("Dashboard Fetch Error:", err);
         setError("Failed to load dashboard data.");
@@ -41,11 +48,19 @@ function Dashboard() {
   }, []);
 
   if (error) {
-    return <div className="text-red-400 text-lg font-semibold">{error}</div>;
+    return (
+      <div className="text-red-400 text-lg font-semibold">
+        {error}
+      </div>
+    );
   }
 
   if (!stats) {
-    return <div className="text-gray-400 text-lg">Loading...</div>;
+    return (
+      <div className="text-gray-400 text-lg">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -59,13 +74,35 @@ function Dashboard() {
       </h1>
 
       {/* KPI Cards */}
-<div className="grid grid-cols-5 gap-8">
-        
-       <DarkCard title="Today Revenue" value={`₹ ${stats.todayRevenue}`} color="text-green-400" /> 
-        <DarkCard title="Today Profit" value={`₹ ${stats.todayProfit || 0}`}  color="text-emerald-400" />
-         <DarkCard title="Today Sales" value={stats.todaySalesCount} />
-        <DarkCard title="Total Products" value={stats.totalProducts} />
-         <DarkCard title="Low Stock" value={stats.lowStockCount} color="text-red-400" />
+      <div className="grid grid-cols-5 gap-8">
+
+        <DarkCard
+          title="Today Revenue"
+          value={`₹ ${stats.todayRevenue}`}
+          color="text-green-400"
+        />
+
+        <DarkCard
+          title="Today Profit"
+          value={`₹ ${stats.todayProfit || 0}`}
+          color="text-emerald-400"
+        />
+
+        <DarkCard
+          title="Today Sales"
+          value={stats.todaySalesCount}
+        />
+
+        <DarkCard
+          title="Total Products"
+          value={stats.totalProducts}
+        />
+
+        <DarkCard
+          title="Low Stock"
+          value={stats.lowStockCount}
+          color="text-red-400"
+        />
 
       </div>
 
@@ -85,7 +122,9 @@ function Dashboard() {
         {/* Low Stock */}
         <DarkWidget title="Low Stock Items">
           {lowStock.length === 0 ? (
-            <p className="text-gray-400 text-sm">All items healthy</p>
+            <p className="text-gray-400 text-sm">
+              All items healthy
+            </p>
           ) : (
             lowStock.map(item => {
               const percent = Math.max(
@@ -109,7 +148,9 @@ function Dashboard() {
         {/* Top Selling */}
         <DarkWidget title="Top Selling Products">
           {topProducts.length === 0 ? (
-            <p className="text-gray-400 text-sm">No sales yet</p>
+            <p className="text-gray-400 text-sm">
+              No sales yet
+            </p>
           ) : (
             topProducts.map((item, index) => {
               const max = topProducts[0]?.totalSold || 1;
@@ -131,7 +172,9 @@ function Dashboard() {
         {/* Expiring */}
         <DarkWidget title="Expiring Soon">
           {expiring.length === 0 ? (
-            <p className="text-gray-400 text-sm">No upcoming expiry</p>
+            <p className="text-gray-400 text-sm">
+              No upcoming expiry
+            </p>
           ) : (
             expiring.map(item => (
               <div
@@ -142,7 +185,8 @@ function Dashboard() {
                   {item.name}
                 </p>
                 <p className="text-xs text-red-400">
-                  Expires on {new Date(item.expiryDate).toLocaleDateString()}
+                  Expires on{" "}
+                  {new Date(item.expiryDate).toLocaleDateString()}
                 </p>
               </div>
             ))
@@ -153,6 +197,8 @@ function Dashboard() {
     </div>
   );
 }
+
+/* ---------- UI COMPONENTS ---------- */
 
 function DarkCard({ title, value, color = "text-white" }) {
   return (
@@ -178,7 +224,9 @@ function DarkSection({ children }) {
 function DarkWidget({ title, children }) {
   return (
     <div className="bg-[#111827] border border-gray-700 p-6 rounded-2xl shadow-lg">
-      <h3 className="text-white font-semibold mb-6">{title}</h3>
+      <h3 className="text-white font-semibold mb-6">
+        {title}
+      </h3>
       {children}
     </div>
   );

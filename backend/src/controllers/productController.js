@@ -1,22 +1,31 @@
 const Product = require("../models/Product");
 
-// Create Product
+// =============================
+// CREATE PRODUCT
+// =============================
 exports.createProduct = async (req, res) => {
   try {
-    const { name, sellingPrice, stockQuantity, reorderThreshold } = req.body;
+    const {
+      name,
+      costPrice,
+      sellingPrice,
+      stockQuantity,
+      reorderThreshold,
+      expiryDate
+    } = req.body;
 
-    // Check if product already exists (case insensitive)
+    // Check existing product for THIS USER only
     const existingProduct = await Product.findOne({
+      owner: req.user._id,
       name: { $regex: new RegExp(`^${name}$`, "i") }
     });
 
     if (existingProduct) {
-      // Update stock instead of creating duplicate
       existingProduct.stockQuantity += Number(stockQuantity);
-
-      // Optionally update price & threshold
       existingProduct.sellingPrice = sellingPrice;
+      existingProduct.costPrice = costPrice;
       existingProduct.reorderThreshold = reorderThreshold;
+      existingProduct.expiryDate = expiryDate || null;
 
       await existingProduct.save();
 
@@ -26,65 +35,98 @@ exports.createProduct = async (req, res) => {
       });
     }
 
-    // Otherwise create new product
-    const product = await Product.create(req.body);
+    // Create new product
+    const product = await Product.create({
+      name,
+      costPrice,
+      sellingPrice,
+      stockQuantity,
+      reorderThreshold,
+      expiryDate: expiryDate || null,
+      owner: req.user._id
+    });
 
     res.status(201).json(product);
 
   } catch (error) {
+    console.error("Create Product Error:", error);
     res.status(400).json({ error: error.message });
   }
 };
 
-// Get All Products
+
+// =============================
+// GET ALL PRODUCTS (Owner Safe)
+// =============================
 exports.getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    const products = await Product.find({
+      owner: req.user._id
+    }).sort({ createdAt: -1 });
+
     res.json(products);
+
   } catch (error) {
+    console.error("Get Products Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
-// Get Low Stock Products
+
+// =============================
+// GET LOW STOCK PRODUCTS
+// =============================
 exports.getLowStockProducts = async (req, res) => {
   try {
     const products = await Product.find({
+      owner: req.user._id,
       $expr: { $lte: ["$stockQuantity", "$reorderThreshold"] }
     });
 
     res.json(products);
+
   } catch (error) {
+    console.error("Low Stock Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
-exports.restockProduct = async (req, res) => {
- 
-    try {
 
+
+// =============================
+// RESTOCK PRODUCT (Owner Safe)
+// =============================
+exports.restockProduct = async (req, res) => {
+  try {
     const { quantity } = req.body;
 
     if (!quantity || quantity <= 0) {
       return res.status(400).json({ message: "Invalid quantity" });
     }
 
-    const updatedProduct = await Product.findByIdAndUpdate(
-      req.params.id,
-      { $inc: { stockQuantity: Number(quantity) } },
-      { new: true }
-    );
+    const product = await Product.findOne({
+      _id: req.params.id,
+      owner: req.user._id
+    });
 
-    if (!updatedProduct) {
+    if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    return res.status(200).json(updatedProduct);
+    product.stockQuantity += Number(quantity);
+    await product.save();
+
+    res.status(200).json(product);
 
   } catch (error) {
     console.error("Restock error:", error);
-    return res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
+
+
+// =============================
+// GET UPCOMING EXPIRY (Owner Safe)
+// =============================
 exports.getUpcomingExpiry = async (req, res) => {
   try {
     const today = new Date();
@@ -92,12 +134,17 @@ exports.getUpcomingExpiry = async (req, res) => {
     next30Days.setDate(today.getDate() + 30);
 
     const products = await Product.find({
-      expiryDate: { $gte: today, $lte: next30Days }
+      owner: req.user._id,
+      expiryDate: {
+        $gte: today,
+        $lte: next30Days
+      }
     });
 
     res.json(products);
 
   } catch (error) {
+    console.error("Expiry Error:", error);
     res.status(500).json({ error: error.message });
   }
 };

@@ -1,18 +1,18 @@
 const express = require("express");
 const router = express.Router();
 
+const protect = require("../middleware/authMiddleware");
+
 const {
   getDashboardStats,
   getTopProducts,
-  getWeeklyProfit
+  getWeeklyProfit,
+  getBusinessHealth
 } = require("../controllers/analyticsController");
 
-router.get("/dashboard", getDashboardStats);
-router.get("/top-products", getTopProducts);
-router.get("/weekly-profit", getWeeklyProfit);
-
-const { getBusinessHealth } = require("../controllers/analyticsController");
-
-router.get("/business-health", getBusinessHealth);
+router.get("/dashboard", protect, getDashboardStats);
+router.get("/top-products", protect, getTopProducts);
+router.get("/weekly-profit", protect, getWeeklyProfit);
+router.get("/business-health", protect, getBusinessHealth);
 
 module.exports = router;

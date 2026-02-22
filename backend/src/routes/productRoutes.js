@@ -1,3 +1,4 @@
+const protect = require("../middleware/authMiddleware");
 const express = require("express");
 const router = express.Router();
 
@@ -9,10 +10,9 @@ const {
   getUpcomingExpiry
 } = require("../controllers/productController");
 
-router.post("/", createProduct);
-router.get("/", getAllProducts);
-router.get("/low-stock", getLowStockProducts);
-router.get("/upcoming-expiry", getUpcomingExpiry);
-router.patch("/:id/restock", restockProduct);
-
+router.post("/", protect, createProduct);
+router.get("/", protect, getAllProducts);
+router.get("/low-stock", protect, getLowStockProducts);
+router.patch("/:id/restock", protect, restockProduct);
+router.get("/upcoming-expiry", protect, getUpcomingExpiry);
 module.exports = router;

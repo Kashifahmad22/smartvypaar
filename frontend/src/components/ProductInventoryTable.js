@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { getAllProducts } from "../services/api";
+import { getAllProducts, restockProduct } from "../services/api";
 
 function ProductInventoryTable() {
   const [products, setProducts] = useState([]);
@@ -20,10 +19,7 @@ function ProductInventoryTable() {
     if (!quantity || quantity <= 0) return;
 
     try {
-      await axios.patch(
-        `http://localhost:5000/api/products/${productId}/restock`,
-        { quantity: Number(quantity) }
-      );
+     await restockProduct(productId, { quantity: Number(quantity) });
 
       setRestockQty((prev) => ({
         ...prev,

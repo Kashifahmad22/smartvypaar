@@ -1,12 +1,13 @@
 const Sale = require("../models/Sale");
 const Product = require("../models/Product");
 
-// 🔹 Create Sale and Decrease Stock
+// =====================================
+// CREATE SALE (Owner Safe)
+// =====================================
 exports.createSale = async (req, res) => {
   try {
     const { productId, quantity } = req.body;
 
-    // Validate input
     if (!productId || !quantity) {
       return res.status(400).json({
         message: "Product ID and quantity are required"
@@ -21,8 +22,11 @@ exports.createSale = async (req, res) => {
       });
     }
 
-    // Find product
-    const product = await Product.findById(productId);
+    // 🔒 Find product only if it belongs to logged-in user
+    const product = await Product.findOne({
+      _id: productId,
+      owner: req.user._id
+    });
 
     if (!product) {
       return res.status(404).json({
@@ -30,7 +34,6 @@ exports.createSale = async (req, res) => {
       });
     }
 
-    // Check stock availability
     if (product.stockQuantity < numericQuantity) {
       return res.status(400).json({
         message: "Insufficient stock"
@@ -53,12 +56,13 @@ exports.createSale = async (req, res) => {
 
     await product.save();
 
-    // Create sale record
+    // 🔒 Attach owner to sale
     const sale = await Sale.create({
       product: product._id,
       quantity: numericQuantity,
       totalAmount,
-      totalProfit
+      totalProfit,
+      owner: req.user._id
     });
 
     res.status(201).json({
@@ -76,10 +80,15 @@ exports.createSale = async (req, res) => {
   }
 };
 
-// 🔹 Get All Sales
+
+// =====================================
+// GET ALL SALES (Owner Safe)
+// =====================================
 exports.getAllSales = async (req, res) => {
   try {
-    const sales = await Sale.find()
+    const sales = await Sale.find({
+      owner: req.user._id
+    })
       .populate("product", "name sellingPrice")
       .sort({ createdAt: -1 });
 

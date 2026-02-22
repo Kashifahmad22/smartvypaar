@@ -1,6 +1,10 @@
 const Product = require("../models/Product");
 const Sale = require("../models/Sale");
 
+
+// =====================================
+// DASHBOARD STATS (Owner Safe)
+// =====================================
 exports.getDashboardStats = async (req, res) => {
   try {
     const today = new Date();
@@ -10,18 +14,22 @@ exports.getDashboardStats = async (req, res) => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
-    // Total products
-    const totalProducts = await Product.countDocuments();
+    // Total products (owner specific)
+    const totalProducts = await Product.countDocuments({
+      owner: req.user._id
+    });
 
-    // Low stock products
+    // Low stock (owner specific)
     const lowStockCount = await Product.countDocuments({
+      owner: req.user._id,
       $expr: { $lte: ["$stockQuantity", "$reorderThreshold"] }
     });
 
-    // Today's sales aggregation (Revenue + Profit)
+    // Today's sales (owner specific)
     const todayStats = await Sale.aggregate([
       {
         $match: {
+          owner: req.user._id,
           createdAt: { $gte: today }
         }
       },
@@ -44,10 +52,11 @@ exports.getDashboardStats = async (req, res) => {
     const todaySalesCount = todayStats[0]?.todaySalesCount || 0;
     const todayProfit = todayStats[0]?.todayProfit || 0;
 
-    // Last 7 days aggregation (Revenue + Profit)
+    // Weekly revenue + profit (owner specific)
     const weeklyData = await Sale.aggregate([
       {
         $match: {
+          owner: req.user._id,
           createdAt: { $gte: sevenDaysAgo }
         }
       },
@@ -84,9 +93,18 @@ exports.getDashboardStats = async (req, res) => {
   }
 };
 
+
+// =====================================
+// TOP SELLING PRODUCTS (Owner Safe)
+// =====================================
 exports.getTopProducts = async (req, res) => {
   try {
     const topProducts = await Sale.aggregate([
+      {
+        $match: {
+          owner: req.user._id
+        }
+      },
       {
         $group: {
           _id: "$product",
@@ -107,13 +125,23 @@ exports.getTopProducts = async (req, res) => {
     res.json(filtered);
 
   } catch (error) {
+    console.error("Top Products Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
+
+// =====================================
+// WEEKLY PROFIT (Owner Safe)
+// =====================================
 exports.getWeeklyProfit = async (req, res) => {
   try {
     const profitData = await Sale.aggregate([
+      {
+        $match: {
+          owner: req.user._id
+        }
+      },
       {
         $addFields: {
           totalProfit: { $ifNull: ["$totalProfit", 0] }
@@ -138,18 +166,23 @@ exports.getWeeklyProfit = async (req, res) => {
   }
 };
 
+
+// =====================================
+// BUSINESS HEALTH (Owner Safe)
+// =====================================
 exports.getBusinessHealth = async (req, res) => {
   try {
-    const Product = require("../models/Product");
-    const Sale = require("../models/Sale");
-
-    const totalProducts = await Product.countDocuments();
+    const totalProducts = await Product.countDocuments({
+      owner: req.user._id
+    });
 
     const lowStockCount = await Product.countDocuments({
+      owner: req.user._id,
       $expr: { $lte: ["$stockQuantity", "$reorderThreshold"] }
     });
 
     const expiringCount = await Product.countDocuments({
+      owner: req.user._id,
       expiryDate: {
         $lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       }
@@ -159,6 +192,7 @@ exports.getBusinessHealth = async (req, res) => {
     today.setHours(0, 0, 0, 0);
 
     const todaySales = await Sale.find({
+      owner: req.user._id,
       createdAt: { $gte: today }
     });
 
@@ -174,7 +208,7 @@ exports.getBusinessHealth = async (req, res) => {
 
     const todaySalesCount = todaySales.length;
 
-    // ===== Scoring Logic =====
+    // ===== Health Score Calculation =====
 
     const profitMargin =
       todayRevenue > 0 ? todayProfit / todayRevenue : 0;
@@ -211,10 +245,19 @@ exports.getBusinessHealth = async (req, res) => {
         inventoryComponent: Math.round(inventoryScore * 25),
         expiryComponent: Math.round(expiryScore * 20),
         activityComponent: Math.round(salesScore * 15)
+      },
+      business: {
+        shopName: req.user.shopName,
+        totalProducts,
+        lowStockCount,
+        expiringCount,
+        todayRevenue,
+        todayProfit
       }
     });
 
   } catch (error) {
+    console.error("Business Health Error:", error);
     res.status(500).json({ error: error.message });
   }
 };

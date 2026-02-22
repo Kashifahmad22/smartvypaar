@@ -1,18 +1,50 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:5000/api";
+const API = axios.create({
+  baseURL: "http://localhost:5000/api"
+});
+
+API.interceptors.request.use((req) => {
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    req.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return req;
+});
 
 export const getDashboardStats = () =>
-  axios.get(`${BASE_URL}/analytics/dashboard`);
+  API.get("/analytics/dashboard");
 
 export const getLowStockProducts = () =>
-  axios.get(`${BASE_URL}/products/low-stock`);
+  API.get("/products/low-stock");
 
-export const createSale = (data) =>
-  axios.post(`${BASE_URL}/sales`, data);
+export const getUpcomingExpiry = () =>
+  API.get("/products/upcoming-expiry");
+
+export const getTopProducts = () =>
+  API.get("/analytics/top-products");
+
+export const getWeeklyProfit = () =>
+  API.get("/analytics/weekly-profit");
+
+export const getBusinessHealth = () =>
+  API.get("/analytics/business-health");
 
 export const getAllProducts = () =>
-  axios.get(`${BASE_URL}/products`);
+  API.get("/products");
+
+export const createProduct = (data) =>
+  API.post("/products", data);
+
+export const createSale = (data) =>
+  API.post("/sales", data);
 
 export const getAllSales = () =>
-  axios.get(`${BASE_URL}/sales`);
+  API.get("/sales");
+
+export const restockProduct = (id, data) =>
+  API.patch(`/products/${id}/restock`, data);
+
+export default API;

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import { createProduct } from "../services/api";
 
 function AddProductForm({ onProductAdded }) {
   const [form, setForm] = useState({
@@ -19,14 +19,14 @@ function AddProductForm({ onProductAdded }) {
     e.preventDefault();
 
     try {
-      await axios.post("http://localhost:5000/api/products", {
-        name: form.name,
-        costPrice: Number(form.costPrice),
-        sellingPrice: Number(form.sellingPrice),
-        stockQuantity: Number(form.stockQuantity),
-        reorderThreshold: Number(form.reorderThreshold),
-        expiryDate: form.expiryDate || null
-      });
+     await createProduct({
+  name: form.name,
+  costPrice: Number(form.costPrice),
+  sellingPrice: Number(form.sellingPrice),
+  stockQuantity: Number(form.stockQuantity),
+  reorderThreshold: Number(form.reorderThreshold),
+  expiryDate: form.expiryDate || null
+});
 
       setForm({
         name: "",
