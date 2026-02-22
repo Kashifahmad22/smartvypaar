@@ -3,7 +3,8 @@ import {
   LayoutDashboard,
   Package,
   ShoppingCart,
-  LogOut
+  LogOut,
+  Building2
 } from "lucide-react";
 
 function MainLayout() {
@@ -43,6 +44,13 @@ function MainLayout() {
             to="/sales"
             icon={<ShoppingCart size={18} />}
             label="Sales"
+          />
+
+          {/* 🔥 NEW BUSINESS PROFILE LINK */}
+          <SidebarLink
+            to="/business"
+            icon={<Building2 size={18} />}
+            label="Business"
           />
         </nav>
 

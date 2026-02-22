@@ -5,6 +5,7 @@ import Inventory from "./pages/Inventory";
 import Sales from "./pages/Sales";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import BusinessProfile from "./pages/BusinessProfile";
 
 function App() {
   const token = localStorage.getItem("token");
@@ -25,6 +26,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="inventory" element={<Inventory />} />
           <Route path="sales" element={<Sales />} />
+          <Route path="business" element={<BusinessProfile />} />
         </Route>
 
       </Routes>

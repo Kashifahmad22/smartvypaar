@@ -4,7 +4,8 @@ import {
   getTopProducts,
   getUpcomingExpiry,
   getWeeklyProfit,
-  getBusinessHealth
+  getBusinessHealth,
+  getProfile
 } from "../services/api";
 
 import { useEffect, useState } from "react";
@@ -19,17 +20,29 @@ function Dashboard() {
   const [expiring, setExpiring] = useState([]);
   const [profitData, setProfitData] = useState([]);
   const [health, setHealth] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const dashboard = await getDashboardStats();
-        const low = await getLowStockProducts();
-        const top = await getTopProducts();
-        const expiry = await getUpcomingExpiry();
-        const profit = await getWeeklyProfit();
-        const healthRes = await getBusinessHealth();
+        const [
+          dashboard,
+          low,
+          top,
+          expiry,
+          profit,
+          healthRes,
+          profileRes
+        ] = await Promise.all([
+          getDashboardStats(),
+          getLowStockProducts(),
+          getTopProducts(),
+          getUpcomingExpiry(),
+          getWeeklyProfit(),
+          getBusinessHealth(),
+          getProfile()
+        ]);
 
         setStats(dashboard.data);
         setLowStock(low.data);
@@ -37,6 +50,7 @@ function Dashboard() {
         setExpiring(expiry.data);
         setProfitData(profit.data);
         setHealth(healthRes.data);
+        setProfile(profileRes.data);
 
       } catch (err) {
         console.error("Dashboard Fetch Error:", err);
@@ -66,14 +80,52 @@ function Dashboard() {
   return (
     <div className="space-y-14">
 
-      {/* Business Health */}
+      {/* ================= BUSINESS PROFILE ================= */}
+      {profile && (
+        <div className="bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 p-8 rounded-3xl shadow-xl">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-3xl font-bold text-white">
+                {profile.shopName}
+              </h2>
+
+              <p className="text-gray-400 mt-2">
+                Owner: {profile.ownerName || "Not Added"}
+              </p>
+
+              <p className="text-gray-400">
+                Phone: {profile.phoneNumber || "Not Added"}
+              </p>
+
+              <p className="text-gray-400">
+                GST: {profile.gstNumber || "Not Added"}
+              </p>
+
+              <p className="text-gray-500 text-sm mt-2">
+                {profile.shopAddress || "Address not added"}
+              </p>
+            </div>
+
+            <div className="text-right">
+              <span className="text-xs uppercase text-gray-500 tracking-wider">
+                Business Type
+              </span>
+              <p className="text-lg font-semibold text-blue-400">
+                {profile.businessType}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= BUSINESS HEALTH ================= */}
       {health && <BusinessHealthCard data={health} />}
 
       <h1 className="text-4xl font-bold text-white">
         Dashboard Overview
       </h1>
 
-      {/* KPI Cards */}
+      {/* ================= KPI CARDS ================= */}
       <div className="grid grid-cols-5 gap-8">
 
         <DarkCard
@@ -106,17 +158,17 @@ function Dashboard() {
 
       </div>
 
-      {/* Revenue Chart */}
+      {/* ================= REVENUE CHART ================= */}
       <DarkSection>
         <RevenueChart data={stats.weeklyData || []} />
       </DarkSection>
 
-      {/* Profit Chart */}
+      {/* ================= PROFIT CHART ================= */}
       <DarkSection>
         <ProfitChart data={profitData || []} />
       </DarkSection>
 
-      {/* Widgets */}
+      {/* ================= WIDGETS ================= */}
       <div className="grid grid-cols-3 gap-8">
 
         {/* Low Stock */}

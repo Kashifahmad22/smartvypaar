@@ -11,6 +11,8 @@ const productRoutes = require("./routes/productRoutes");
 const saleRoutes = require("./routes/saleRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const errorMiddleware = require("./middleware/errorMiddleware");
+const profileRoutes = require("./routes/profileRoutes");
+
 
 /* ==============================
    ENVIRONMENT VALIDATION
@@ -89,6 +91,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/sales", saleRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/profile", profileRoutes);
 
 /* ==============================
    GLOBAL ERROR HANDLER
