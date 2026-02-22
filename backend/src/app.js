@@ -42,5 +42,8 @@ app.use("/api/sales", saleRoutes);
 
 app.use("/api/analytics", analyticsRoutes);
 
+const errorMiddleware = require("./middleware/errorMiddleware");
+
+app.use(errorMiddleware);
 
 module.exports = app;

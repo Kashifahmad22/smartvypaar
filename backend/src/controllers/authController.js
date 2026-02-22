@@ -1,26 +1,38 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { registerSchema, loginSchema } = require("../validations/authValidation");
+const AppError = require("../utils/AppError");
 
 /* ===========================
    REGISTER
 =========================== */
-exports.register = async (req, res) => {
+exports.register = async (req, res, next) => {
   try {
-    const { shopName, email, password } = req.body;
+    // 🔐 Zod Validation
+    const parsed = registerSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      throw new AppError(
+        parsed.error.errors[0].message,
+        400
+      );
+    }
+
+    const { shopName, email, password } = parsed.data;
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email }).lean();
     if (existingUser) {
-      return res.status(400).json({ message: "Email already registered" });
+      throw new AppError("Email already registered", 400);
     }
 
     // Hash password
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(12);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // Create user
-    const user = await User.create({
+    await User.create({
       shopName,
       email,
       password: hashedPassword
@@ -31,7 +43,7 @@ exports.register = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 
@@ -39,23 +51,32 @@ exports.register = async (req, res) => {
 /* ===========================
    LOGIN
 =========================== */
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    // 🔐 Zod Validation
+    const parsed = loginSchema.safeParse(req.body);
 
-    // Check user
+    if (!parsed.success) {
+      throw new AppError(
+        parsed.error.errors[0].message,
+        400
+      );
+    }
+
+    const { email, password } = parsed.data;
+
     const user = await User.findOne({ email });
+
     if (!user) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      throw new AppError("Invalid credentials", 400);
     }
 
-    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
+
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      throw new AppError("Invalid credentials", 400);
     }
 
-    // Create JWT
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET,
@@ -72,6 +93,6 @@ exports.login = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };

@@ -1,6 +1,12 @@
 const Product = require("../models/Product");
 const Sale = require("../models/Sale");
 
+// Utility: Safe console error
+const logError = (message, error) => {
+  if (process.env.NODE_ENV !== "production") {
+    console.error(message, error);
+  }
+};
 
 // =====================================
 // DASHBOARD STATS (Owner Safe)
@@ -14,18 +20,18 @@ exports.getDashboardStats = async (req, res) => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
-    // Total products (owner specific)
+    // Total products
     const totalProducts = await Product.countDocuments({
       owner: req.user._id
     });
 
-    // Low stock (owner specific)
+    // Low stock
     const lowStockCount = await Product.countDocuments({
       owner: req.user._id,
       $expr: { $lte: ["$stockQuantity", "$reorderThreshold"] }
     });
 
-    // Today's sales (owner specific)
+    // Today's stats
     const todayStats = await Sale.aggregate([
       {
         $match: {
@@ -52,7 +58,7 @@ exports.getDashboardStats = async (req, res) => {
     const todaySalesCount = todayStats[0]?.todaySalesCount || 0;
     const todayProfit = todayStats[0]?.todayProfit || 0;
 
-    // Weekly revenue + profit (owner specific)
+    // Weekly revenue + profit
     const weeklyData = await Sale.aggregate([
       {
         $match: {
@@ -88,8 +94,8 @@ exports.getDashboardStats = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Dashboard Error:", error);
-    res.status(500).json({ error: error.message });
+    logError("Dashboard Error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -101,9 +107,7 @@ exports.getTopProducts = async (req, res) => {
   try {
     const topProducts = await Sale.aggregate([
       {
-        $match: {
-          owner: req.user._id
-        }
+        $match: { owner: req.user._id }
       },
       {
         $group: {
@@ -125,8 +129,8 @@ exports.getTopProducts = async (req, res) => {
     res.json(filtered);
 
   } catch (error) {
-    console.error("Top Products Error:", error);
-    res.status(500).json({ error: error.message });
+    logError("Top Products Error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -138,9 +142,7 @@ exports.getWeeklyProfit = async (req, res) => {
   try {
     const profitData = await Sale.aggregate([
       {
-        $match: {
-          owner: req.user._id
-        }
+        $match: { owner: req.user._id }
       },
       {
         $addFields: {
@@ -161,14 +163,14 @@ exports.getWeeklyProfit = async (req, res) => {
     res.json(profitData);
 
   } catch (error) {
-    console.error("Weekly Profit Error:", error);
-    res.status(500).json({ error: error.message });
+    logError("Weekly Profit Error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
 
 // =====================================
-// BUSINESS HEALTH (Owner Safe)
+// BUSINESS HEALTH (Optimized + Owner Safe)
 // =====================================
 exports.getBusinessHealth = async (req, res) => {
   try {
@@ -191,22 +193,32 @@ exports.getBusinessHealth = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const todaySales = await Sale.find({
-      owner: req.user._id,
-      createdAt: { $gte: today }
-    });
+    // Use aggregation instead of .find() to reduce memory usage
+    const todayStats = await Sale.aggregate([
+      {
+        $match: {
+          owner: req.user._id,
+          createdAt: { $gte: today }
+        }
+      },
+      {
+        $addFields: {
+          totalProfit: { $ifNull: ["$totalProfit", 0] }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          todayRevenue: { $sum: "$totalAmount" },
+          todayProfit: { $sum: "$totalProfit" },
+          todaySalesCount: { $sum: 1 }
+        }
+      }
+    ]);
 
-    const todayRevenue = todaySales.reduce(
-      (sum, sale) => sum + sale.totalAmount,
-      0
-    );
-
-    const todayProfit = todaySales.reduce(
-      (sum, sale) => sum + (sale.totalProfit || 0),
-      0
-    );
-
-    const todaySalesCount = todaySales.length;
+    const todayRevenue = todayStats[0]?.todayRevenue || 0;
+    const todayProfit = todayStats[0]?.todayProfit || 0;
+    const todaySalesCount = todayStats[0]?.todaySalesCount || 0;
 
     // ===== Health Score Calculation =====
 
@@ -257,7 +269,7 @@ exports.getBusinessHealth = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Business Health Error:", error);
-    res.status(500).json({ error: error.message });
+    logError("Business Health Error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };

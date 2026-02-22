@@ -1,10 +1,30 @@
 const Product = require("../models/Product");
+const {
+  createProductSchema,
+  restockSchema
+} = require("../validations/productValidation");
+const AppError = require("../utils/AppError");
+
+// Utility: Escape regex special characters
+const escapeRegex = (text) => {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
 
 // =============================
 // CREATE PRODUCT
 // =============================
-exports.createProduct = async (req, res) => {
+exports.createProduct = async (req, res, next) => {
   try {
+    // 🔐 Zod Validation
+    const parsed = createProductSchema.safeParse(req.body);
+
+    if (!parsed.success) {
+      throw new AppError(
+        parsed.error.errors[0].message,
+        400
+      );
+    }
+
     const {
       name,
       costPrice,
@@ -12,16 +32,18 @@ exports.createProduct = async (req, res) => {
       stockQuantity,
       reorderThreshold,
       expiryDate
-    } = req.body;
+    } = parsed.data;
 
-    // Check existing product for THIS USER only
+    const safeName = escapeRegex(name);
+
+    // Check existing product (owner safe)
     const existingProduct = await Product.findOne({
       owner: req.user._id,
-      name: { $regex: new RegExp(`^${name}$`, "i") }
+      name: { $regex: new RegExp(`^${safeName}$`, "i") }
     });
 
     if (existingProduct) {
-      existingProduct.stockQuantity += Number(stockQuantity);
+      existingProduct.stockQuantity += stockQuantity;
       existingProduct.sellingPrice = sellingPrice;
       existingProduct.costPrice = costPrice;
       existingProduct.reorderThreshold = reorderThreshold;
@@ -49,26 +71,26 @@ exports.createProduct = async (req, res) => {
     res.status(201).json(product);
 
   } catch (error) {
-    console.error("Create Product Error:", error);
-    res.status(400).json({ error: error.message });
+    next(error);
   }
 };
 
 
 // =============================
-// GET ALL PRODUCTS (Owner Safe)
+// GET ALL PRODUCTS
 // =============================
-exports.getAllProducts = async (req, res) => {
+exports.getAllProducts = async (req, res, next) => {
   try {
     const products = await Product.find({
       owner: req.user._id
-    }).sort({ createdAt: -1 });
+    })
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.json(products);
 
   } catch (error) {
-    console.error("Get Products Error:", error);
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 
@@ -76,32 +98,37 @@ exports.getAllProducts = async (req, res) => {
 // =============================
 // GET LOW STOCK PRODUCTS
 // =============================
-exports.getLowStockProducts = async (req, res) => {
+exports.getLowStockProducts = async (req, res, next) => {
   try {
     const products = await Product.find({
       owner: req.user._id,
       $expr: { $lte: ["$stockQuantity", "$reorderThreshold"] }
-    });
+    }).lean();
 
     res.json(products);
 
   } catch (error) {
-    console.error("Low Stock Error:", error);
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 
 
 // =============================
-// RESTOCK PRODUCT (Owner Safe)
+// RESTOCK PRODUCT
 // =============================
-exports.restockProduct = async (req, res) => {
+exports.restockProduct = async (req, res, next) => {
   try {
-    const { quantity } = req.body;
+    // 🔐 Zod Validation
+    const parsed = restockSchema.safeParse(req.body);
 
-    if (!quantity || quantity <= 0) {
-      return res.status(400).json({ message: "Invalid quantity" });
+    if (!parsed.success) {
+      throw new AppError(
+        parsed.error.errors[0].message,
+        400
+      );
     }
+
+    const { quantity } = parsed.data;
 
     const product = await Product.findOne({
       _id: req.params.id,
@@ -109,25 +136,24 @@ exports.restockProduct = async (req, res) => {
     });
 
     if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+      throw new AppError("Product not found", 404);
     }
 
-    product.stockQuantity += Number(quantity);
+    product.stockQuantity += quantity;
     await product.save();
 
     res.status(200).json(product);
 
   } catch (error) {
-    console.error("Restock error:", error);
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 
 
 // =============================
-// GET UPCOMING EXPIRY (Owner Safe)
+// GET UPCOMING EXPIRY
 // =============================
-exports.getUpcomingExpiry = async (req, res) => {
+exports.getUpcomingExpiry = async (req, res, next) => {
   try {
     const today = new Date();
     const next30Days = new Date();
@@ -139,12 +165,11 @@ exports.getUpcomingExpiry = async (req, res) => {
         $gte: today,
         $lte: next30Days
       }
-    });
+    }).lean();
 
     res.json(products);
 
   } catch (error) {
-    console.error("Expiry Error:", error);
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
