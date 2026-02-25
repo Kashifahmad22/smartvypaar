@@ -1,7 +1,7 @@
 const Product = require("../models/Product");
 const Sale = require("../models/Sale");
+const mongoose = require("mongoose");
 
-// Utility: Safe console error
 const logError = (message, error) => {
   if (process.env.NODE_ENV !== "production") {
     console.error(message, error);
@@ -9,10 +9,12 @@ const logError = (message, error) => {
 };
 
 // =====================================
-// DASHBOARD STATS (Owner Safe)
+// DASHBOARD STATS (Batch Compatible)
 // =====================================
 exports.getDashboardStats = async (req, res) => {
   try {
+    const ownerId = new mongoose.Types.ObjectId(req.user._id);
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -20,28 +22,18 @@ exports.getDashboardStats = async (req, res) => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
-    // Total products
-    const totalProducts = await Product.countDocuments({
-      owner: req.user._id
-    });
+    const totalProducts = await Product.countDocuments({ owner: ownerId });
 
-    // Low stock
     const lowStockCount = await Product.countDocuments({
-      owner: req.user._id,
-      $expr: { $lte: ["$stockQuantity", "$reorderThreshold"] }
+      owner: ownerId,
+      $expr: { $lte: ["$totalStock", "$reorderThreshold"] }
     });
 
-    // Today's stats
     const todayStats = await Sale.aggregate([
       {
         $match: {
-          owner: req.user._id,
+          owner: ownerId,
           createdAt: { $gte: today }
-        }
-      },
-      {
-        $addFields: {
-          totalProfit: { $ifNull: ["$totalProfit", 0] }
         }
       },
       {
@@ -58,17 +50,11 @@ exports.getDashboardStats = async (req, res) => {
     const todaySalesCount = todayStats[0]?.todaySalesCount || 0;
     const todayProfit = todayStats[0]?.todayProfit || 0;
 
-    // Weekly revenue + profit
     const weeklyData = await Sale.aggregate([
       {
         $match: {
-          owner: req.user._id,
+          owner: ownerId,
           createdAt: { $gte: sevenDaysAgo }
-        }
-      },
-      {
-        $addFields: {
-          totalProfit: { $ifNull: ["$totalProfit", 0] }
         }
       },
       {
@@ -99,16 +85,91 @@ exports.getDashboardStats = async (req, res) => {
   }
 };
 
+// =====================================
+// MONTHLY SUMMARY
+// =====================================
+exports.getMonthlySummary = async (req, res) => {
+  try {
+    const ownerId = new mongoose.Types.ObjectId(req.user._id);
+
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const sales = await Sale.find({
+      owner: ownerId,
+      createdAt: { $gte: startOfMonth }
+    }).lean();
+
+    const totalRevenue = sales.reduce(
+      (sum, sale) => sum + sale.totalAmount,
+      0
+    );
+
+    const totalProfit = sales.reduce(
+      (sum, sale) => sum + sale.totalProfit,
+      0
+    );
+
+    const productStats = {};
+
+    sales.forEach((sale) => {
+      const id = sale.product?.toString();
+      if (!id) return;
+      productStats[id] = (productStats[id] || 0) + sale.quantity;
+    });
+
+    let bestSellingProduct = null;
+    let slowestProduct = null;
+
+    const productIds = Object.keys(productStats);
+
+    if (productIds.length > 0) {
+      const products = await Product.find({
+        _id: { $in: productIds }
+      }).lean();
+
+      products.forEach((product) => {
+        const quantity = productStats[product._id];
+
+        if (!bestSellingProduct || quantity > bestSellingProduct.quantity) {
+          bestSellingProduct = {
+            name: product.name,
+            quantity
+          };
+        }
+
+        if (!slowestProduct || quantity < slowestProduct.quantity) {
+          slowestProduct = {
+            name: product.name,
+            quantity
+          };
+        }
+      });
+    }
+
+    res.json({
+      totalRevenue,
+      totalProfit,
+      bestSellingProduct,
+      slowestProduct
+    });
+
+  } catch (error) {
+    logError("Monthly Summary Error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 
 // =====================================
-// TOP SELLING PRODUCTS (Owner Safe)
+// TOP PRODUCTS
 // =====================================
 exports.getTopProducts = async (req, res) => {
   try {
+    const ownerId = new mongoose.Types.ObjectId(req.user._id);
+
     const topProducts = await Sale.aggregate([
-      {
-        $match: { owner: req.user._id }
-      },
+      { $match: { owner: ownerId } },
       {
         $group: {
           _id: "$product",
@@ -124,9 +185,7 @@ exports.getTopProducts = async (req, res) => {
       select: "name"
     });
 
-    const filtered = populated.filter(item => item._id);
-
-    res.json(filtered);
+    res.json(populated.filter(item => item._id));
 
   } catch (error) {
     logError("Top Products Error:", error);
@@ -134,21 +193,15 @@ exports.getTopProducts = async (req, res) => {
   }
 };
 
-
 // =====================================
-// WEEKLY PROFIT (Owner Safe)
+// WEEKLY PROFIT
 // =====================================
 exports.getWeeklyProfit = async (req, res) => {
   try {
+    const ownerId = new mongoose.Types.ObjectId(req.user._id);
+
     const profitData = await Sale.aggregate([
-      {
-        $match: { owner: req.user._id }
-      },
-      {
-        $addFields: {
-          totalProfit: { $ifNull: ["$totalProfit", 0] }
-        }
-      },
+      { $match: { owner: ownerId } },
       {
         $group: {
           _id: {
@@ -168,24 +221,23 @@ exports.getWeeklyProfit = async (req, res) => {
   }
 };
 
-
 // =====================================
-// BUSINESS HEALTH (Optimized + Owner Safe)
+// BUSINESS HEALTH (Batch Compatible)
 // =====================================
 exports.getBusinessHealth = async (req, res) => {
   try {
-    const totalProducts = await Product.countDocuments({
-      owner: req.user._id
-    });
+    const ownerId = new mongoose.Types.ObjectId(req.user._id);
+
+    const totalProducts = await Product.countDocuments({ owner: ownerId });
 
     const lowStockCount = await Product.countDocuments({
-      owner: req.user._id,
-      $expr: { $lte: ["$stockQuantity", "$reorderThreshold"] }
+      owner: ownerId,
+      $expr: { $lte: ["$totalStock", "$reorderThreshold"] }
     });
 
     const expiringCount = await Product.countDocuments({
-      owner: req.user._id,
-      expiryDate: {
+      owner: ownerId,
+      "batches.expiryDate": {
         $lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       }
     });
@@ -193,17 +245,11 @@ exports.getBusinessHealth = async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Use aggregation instead of .find() to reduce memory usage
     const todayStats = await Sale.aggregate([
       {
         $match: {
-          owner: req.user._id,
+          owner: ownerId,
           createdAt: { $gte: today }
-        }
-      },
-      {
-        $addFields: {
-          totalProfit: { $ifNull: ["$totalProfit", 0] }
         }
       },
       {
@@ -220,23 +266,10 @@ exports.getBusinessHealth = async (req, res) => {
     const todayProfit = todayStats[0]?.todayProfit || 0;
     const todaySalesCount = todayStats[0]?.todaySalesCount || 0;
 
-    // ===== Health Score Calculation =====
-
-    const profitMargin =
-      todayRevenue > 0 ? todayProfit / todayRevenue : 0;
-
-    const inventoryScore =
-      totalProducts > 0
-        ? 1 - lowStockCount / totalProducts
-        : 1;
-
-    const expiryScore =
-      totalProducts > 0
-        ? 1 - expiringCount / totalProducts
-        : 1;
-
-    const salesScore =
-      todaySalesCount > 0 ? 1 : 0;
+    const profitMargin = todayRevenue > 0 ? todayProfit / todayRevenue : 0;
+    const inventoryScore = totalProducts > 0 ? 1 - lowStockCount / totalProducts : 1;
+    const expiryScore = totalProducts > 0 ? 1 - expiringCount / totalProducts : 1;
+    const salesScore = todaySalesCount > 0 ? 1 : 0;
 
     const finalScore =
       profitMargin * 40 +

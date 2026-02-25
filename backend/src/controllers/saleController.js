@@ -4,15 +4,15 @@ const Product = require("../models/Product");
 const { createSaleSchema } = require("../validations/saleValidation");
 const AppError = require("../utils/AppError");
 
+
 // =====================================
-// CREATE SALE (Atomic + Owner Safe + Validated)
+// CREATE SALE (Enterprise FEFO Engine)
 // =====================================
 exports.createSale = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    // 🔐 Zod Validation
     const parsed = createSaleSchema.safeParse(req.body);
 
     if (!parsed.success) {
@@ -24,7 +24,6 @@ exports.createSale = async (req, res, next) => {
 
     const { productId, quantity } = parsed.data;
 
-    // 🔒 Find product (owner safe)
     const product = await Product.findOne({
       _id: productId,
       owner: req.user._id
@@ -34,66 +33,103 @@ exports.createSale = async (req, res, next) => {
       throw new AppError("Product not found", 404);
     }
 
-    if (product.stockQuantity < quantity) {
+    if (product.totalStock < quantity) {
       throw new AppError("Insufficient stock", 400);
     }
 
-    // Calculate totals
-    const totalAmount =
-      product.sellingPrice * quantity;
+    let remainingQty = quantity;
+    let totalAmount = 0;
+    let totalProfit = 0;
+    const batchBreakdown = [];
 
-    const totalProfit =
-      (product.sellingPrice - product.costPrice) *
-      quantity;
+    // 🔥 FEFO (First Expiry First Out)
+    const sortedBatches = product.batches
+      .filter(b => b.quantity > 0)
+      .sort((a, b) => {
+        if (a.expiryDate && b.expiryDate) {
+          return new Date(a.expiryDate) - new Date(b.expiryDate);
+        }
+        if (a.expiryDate) return -1;
+        if (b.expiryDate) return 1;
+        return new Date(a.purchaseDate) - new Date(b.purchaseDate);
+      });
 
-    // Deduct stock
-    product.stockQuantity -= quantity;
+    for (const batch of sortedBatches) {
+      if (remainingQty <= 0) break;
 
-    const lowStock =
-      product.stockQuantity <= product.reorderThreshold;
+      const deductQty = Math.min(batch.quantity, remainingQty);
+
+      const amount = deductQty * batch.sellingPrice;
+      const profit =
+        deductQty * (batch.sellingPrice - batch.costPrice);
+
+      batch.quantity -= deductQty;
+      remainingQty -= deductQty;
+
+      totalAmount += amount;
+      totalProfit += profit;
+
+      batchBreakdown.push({
+        batchId: batch._id,
+        batchNumber: batch.batchNumber,
+        quantity: deductQty,
+        costPrice: batch.costPrice,
+        sellingPrice: batch.sellingPrice,
+        profit
+      });
+    }
+
+    if (remainingQty > 0) {
+      throw new AppError("Stock deduction mismatch", 500);
+    }
+
+    // 🔥 Update product intelligence
+    product.totalStock -= quantity;
+    product.totalSoldQuantity += quantity;
+    product.lastSoldAt = new Date();
 
     await product.save({ session });
 
-    // Create sale
     const [sale] = await Sale.create(
       [{
         product: product._id,
+        owner: req.user._id,
         quantity,
+        batchBreakdown,
         totalAmount,
-        totalProfit,
-        owner: req.user._id
+        totalProfit
       }],
       { session }
     );
 
-    // Commit transaction
     await session.commitTransaction();
     session.endSession();
 
     res.status(201).json({
       message: "Sale recorded successfully",
       sale,
-      updatedStock: product.stockQuantity,
-      lowStockAlert: lowStock
+      updatedStock: product.totalStock,
+      lowStockAlert:
+        product.totalStock <= product.reorderThreshold
     });
 
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
-    next(error); // 🔥 send to global error middleware
+    next(error);
   }
 };
 
 
 // =====================================
-// GET ALL SALES
+// GET ALL SALES (Owner Safe)
 // =====================================
 exports.getAllSales = async (req, res, next) => {
   try {
     const sales = await Sale.find({
       owner: req.user._id
     })
-      .populate("product", "name sellingPrice")
+      .populate("product", "name")
       .sort({ createdAt: -1 })
       .lean();
 

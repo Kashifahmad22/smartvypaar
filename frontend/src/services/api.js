@@ -67,6 +67,16 @@ export const createProduct = (data) =>
 export const restockProduct = (id, data) =>
   API.patch(`/products/${id}/restock`, data);
 
+export const getMonthlySummary = () =>
+  API.get("/analytics/monthly-summary");
+
+export const updateBatchQuantity = (batchId, data) =>
+  API.patch(`/products/batch/${batchId}`, data);
+
+export const deleteBatch = (batchId) =>
+  API.delete(`/products/batch/${batchId}`);
+
+
 /* ==============================
    SALES
 ============================== */

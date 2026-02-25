@@ -4,7 +4,8 @@ import {
   Package,
   ShoppingCart,
   LogOut,
-  Building2
+  Building2,
+  PlusCircle
 } from "lucide-react";
 
 function MainLayout() {
@@ -18,16 +19,22 @@ function MainLayout() {
   return (
     <div className="flex min-h-screen bg-[#0f172a] text-gray-100">
 
-      {/* Sidebar */}
+      {/* ================= SIDEBAR ================= */}
       <aside className="w-64 bg-[#111827] border-r border-gray-800 p-6 flex flex-col">
 
         {/* Logo */}
-        <h1 className="text-2xl font-bold text-white mb-12 tracking-wide">
-          SmartVyapaar
-        </h1>
+        <div className="mb-12">
+          <h1 className="text-2xl font-bold text-white tracking-wide">
+            SmartVyapaar
+          </h1>
+          <p className="text-xs text-gray-500 mt-1">
+            Retail Intelligence System
+          </p>
+        </div>
 
         {/* Navigation */}
         <nav className="space-y-3 flex-1">
+
           <SidebarLink
             to="/"
             icon={<LayoutDashboard size={18} />}
@@ -40,21 +47,28 @@ function MainLayout() {
             label="Inventory"
           />
 
+          {/* ADD PRODUCT LINK */}
+          <SidebarLink
+            to="/add-product"
+            icon={<PlusCircle size={18} />}
+            label="Add Product"
+          />
+
           <SidebarLink
             to="/sales"
             icon={<ShoppingCart size={18} />}
             label="Sales"
           />
 
-          {/* 🔥 NEW BUSINESS PROFILE LINK */}
           <SidebarLink
             to="/business"
             icon={<Building2 size={18} />}
             label="Business"
           />
+
         </nav>
 
-        {/* Logout Button */}
+        {/* Logout */}
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-600 hover:bg-red-700 transition-all text-white"
@@ -67,9 +81,10 @@ function MainLayout() {
         <div className="text-xs text-gray-500 mt-6">
           © 2026 SmartVyapaar
         </div>
+
       </aside>
 
-      {/* Main Content */}
+      {/* ================= MAIN CONTENT ================= */}
       <main className="flex-1 p-10 overflow-y-auto">
         <div className="max-w-7xl mx-auto">
           <Outlet />
@@ -80,7 +95,8 @@ function MainLayout() {
   );
 }
 
-/* Sidebar Link Component */
+
+/* ================= SIDEBAR LINK COMPONENT ================= */
 
 function SidebarLink({ to, icon, label }) {
   return (

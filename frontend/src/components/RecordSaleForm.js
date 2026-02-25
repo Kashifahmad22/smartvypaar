@@ -8,14 +8,20 @@ function RecordSaleForm({ onSaleRecorded }) {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const res = await getAllProducts();
-      setProducts(res.data);
+      try {
+        const res = await getAllProducts();
+        setProducts(res.data);
+      } catch (err) {
+        console.error("Error fetching products:", err);
+      }
     };
+
     fetchProducts();
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!productId || !quantity) return;
 
     try {
@@ -50,11 +56,13 @@ function RecordSaleForm({ onSaleRecorded }) {
           className="bg-[#1f2937] border border-gray-600 text-white px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 transition"
         >
           <option value="">Select Product</option>
+
           {products.map((p) => (
             <option key={p._id} value={p._id}>
-              {p.name} (Stock: {p.stockQuantity})
+              {p.name} (Stock: {p.totalStock ?? 0})
             </option>
           ))}
+
         </select>
 
         {/* Quantity Input */}
@@ -64,6 +72,7 @@ function RecordSaleForm({ onSaleRecorded }) {
           value={quantity}
           onChange={(e) => setQuantity(e.target.value)}
           required
+          min="1"
           className="bg-[#1f2937] border border-gray-600 text-white placeholder-gray-400 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 transition"
         />
 

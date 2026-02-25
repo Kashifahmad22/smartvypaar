@@ -7,12 +7,17 @@ const {
   getDashboardStats,
   getTopProducts,
   getWeeklyProfit,
-  getBusinessHealth
+  getBusinessHealth,
+  getMonthlySummary   // 🔥 NEW
 } = require("../controllers/analyticsController");
 
+// Existing routes
 router.get("/dashboard", protect, getDashboardStats);
 router.get("/top-products", protect, getTopProducts);
 router.get("/weekly-profit", protect, getWeeklyProfit);
 router.get("/business-health", protect, getBusinessHealth);
+
+// 🔥 NEW Monthly Summary Route
+router.get("/monthly-summary", protect, getMonthlySummary);
 
 module.exports = router;
