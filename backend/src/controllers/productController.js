@@ -118,10 +118,19 @@ exports.createProduct = async (req, res, next) => {
 };
 
 // ======================================
-// GET ALL PRODUCTS (Optimized)
+// GET ALL PRODUCTS (Paginated)
 // ======================================
 exports.getAllProducts = async (req, res, next) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const skip = (page - 1) * limit;
+
+    const totalProducts = await Product.countDocuments({
+      owner: req.user._id
+    });
+
     const products = await Product.find(
       { owner: req.user._id },
       {
@@ -135,9 +144,11 @@ exports.getAllProducts = async (req, res, next) => {
       }
     )
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .lean();
 
-    // 🔥 FEFO sorting for UI consistency
+    // FEFO Sorting
     products.forEach(product => {
       product.batches.sort((a, b) => {
         if (!a.expiryDate) return 1;
@@ -146,7 +157,12 @@ exports.getAllProducts = async (req, res, next) => {
       });
     });
 
-    res.json(products);
+    res.json({
+      products,
+      totalProducts,
+      totalPages: Math.ceil(totalProducts / limit),
+      currentPage: page
+    });
 
   } catch (error) {
     next(error);

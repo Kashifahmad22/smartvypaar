@@ -51,9 +51,8 @@ export const getWeeklyProfit = () =>
 /* ==============================
    PRODUCTS
 ============================== */
-
-export const getAllProducts = () =>
-  API.get("/products");
+export const getAllProducts = (page = 1, limit = 5) =>
+  API.get(`/products?page=${page}&limit=${limit}`);
 
 export const getLowStockProducts = () =>
   API.get("/products/low-stock");

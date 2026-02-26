@@ -7,17 +7,17 @@ function RecordSaleForm({ onSaleRecorded }) {
   const [quantity, setQuantity] = useState("");
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await getAllProducts();
-        setProducts(res.data);
-      } catch (err) {
-        console.error("Error fetching products:", err);
-      }
-    };
+  const fetchProducts = async () => {
+    try {
+      const res = await getAllProducts(1, 100);
+      setProducts(res.data.products);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+    }
+  };
 
-    fetchProducts();
-  }, []);
+  fetchProducts();
+}, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
