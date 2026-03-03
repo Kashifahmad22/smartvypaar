@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -18,6 +18,7 @@ import {
 
 function MainLayout() {
   const navigate = useNavigate();
+  const location = useLocation(); // ✅ Added
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   /* ================= THEME STATE ================= */
@@ -35,13 +36,27 @@ function MainLayout() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
+  /* ================= PAGE TITLE LOGIC ================= */
+  const getPageTitle = () => {
+    const path = location.pathname;
+
+    if (path === "/") return "Dashboard";
+    if (path === "/insights") return "Smart Insights";
+    if (path === "/inventory") return "Inventory";
+    if (path === "/add-product") return "Add Product";
+    if (path === "/sales") return "Sales";
+    if (path === "/sales-history") return "Sales History";
+    if (path === "/ledger") return "Ledger";
+    if (path === "/business") return "Business Profile";
+
+    return "SmartVyapaar";
+  };
+
   /* ================= GLOBAL DESIGN SYSTEM ================= */
   useEffect(() => {
     const style = document.createElement("style");
 
     style.innerHTML = `
-      /* ================= ANIMATIONS ================= */
-
       @keyframes fadeIn {
         from { opacity: 0; transform: translateY(8px); }
         to { opacity: 1; transform: translateY(0); }
@@ -50,8 +65,6 @@ function MainLayout() {
       .animate-fadeIn {
         animation: fadeIn 0.5s ease-out;
       }
-
-      /* ================= INPUT SYSTEM ================= */
 
       .sv-input {
         width: 100%;
@@ -96,8 +109,6 @@ function MainLayout() {
         box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.25);
       }
 
-      /* ================= BUTTON SYSTEM ================= */
-
       .sv-btn-primary {
         background: rgb(79 70 229);
         color: white;
@@ -123,8 +134,6 @@ function MainLayout() {
       .sv-btn-danger:hover {
         background: rgb(185 28 28);
       }
-
-      /* ================= CARD SYSTEM ================= */
 
       .sv-card {
         background: white;
@@ -164,7 +173,6 @@ function MainLayout() {
   return (
     <div className="flex min-h-screen bg-gray-100 dark:bg-[#0f172a] text-gray-800 dark:text-gray-100 transition-colors duration-300">
 
-      {/* MOBILE OVERLAY */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
@@ -172,7 +180,6 @@ function MainLayout() {
         />
       )}
 
-      {/* SIDEBAR */}
       <aside
         className={`
           fixed md:static inset-y-0 left-0 z-40 w-64
@@ -227,7 +234,6 @@ function MainLayout() {
         </div>
       </aside>
 
-      {/* MAIN AREA */}
       <div className="flex-1 flex flex-col">
 
         <header className="flex items-center justify-between px-6 md:px-10 py-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f172a]">
@@ -240,7 +246,7 @@ function MainLayout() {
           </button>
 
           <div className="text-lg font-semibold hidden md:block">
-            Dashboard
+            {getPageTitle()}
           </div>
 
           <button

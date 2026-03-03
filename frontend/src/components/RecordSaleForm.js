@@ -3,7 +3,7 @@ import {
   createSale,
   getAllProducts,
   getParties,
-  createParty
+  createParty,
 } from "../services/api";
 
 function RecordSaleForm({ onSaleRecorded }) {
@@ -24,29 +24,30 @@ function RecordSaleForm({ onSaleRecorded }) {
 
   const [calculatedAmount, setCalculatedAmount] = useState(0);
 
-  // FETCH DATA
+  /* ================= FETCH DATA ================= */
   useEffect(() => {
     const fetchData = async () => {
       try {
         const productRes = await getAllProducts(1, 100);
-        setProducts(productRes.data.products);
+        setProducts(productRes.data.products || []);
 
         const customerRes = await getParties("CUSTOMER");
-        setCustomers(customerRes.data.data);
+        setCustomers(customerRes.data.data || []);
       } catch (err) {
-        console.error("Error loading data:", err);
+        console.error(err);
       }
     };
 
     fetchData();
   }, []);
 
-  // AUTO CALCULATE
+  /* ================= AUTO CALCULATE ================= */
   useEffect(() => {
-    const selectedProduct = products.find(p => p._id === productId);
+    const selectedProduct = products.find((p) => p._id === productId);
 
     if (selectedProduct && quantity > 0) {
-      const price = selectedProduct.batches?.[0]?.sellingPrice || 0;
+      const price =
+        selectedProduct.batches?.[0]?.sellingPrice || 0;
       setCalculatedAmount(price * quantity);
     } else {
       setCalculatedAmount(0);
@@ -62,6 +63,7 @@ function RecordSaleForm({ onSaleRecorded }) {
     else if (amountPaid > 0) paymentStatus = "PARTIAL";
   }
 
+  /* ================= SUBMIT ================= */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!productId || !quantity) return;
@@ -74,8 +76,9 @@ function RecordSaleForm({ onSaleRecorded }) {
           name: newCustomerName,
           phone: newCustomerPhone,
           type: "CUSTOMER",
-          openingBalance: 0
+          openingBalance: 0,
         });
+
         finalCustomerId = res.data.data._id;
       }
 
@@ -85,7 +88,7 @@ function RecordSaleForm({ onSaleRecorded }) {
         customerId: finalCustomerId || undefined,
         paymentReceived: Number(paymentReceived) || 0,
         paymentMethod,
-        invoiceNumber
+        invoiceNumber,
       });
 
       // Reset
@@ -99,17 +102,16 @@ function RecordSaleForm({ onSaleRecorded }) {
       setNewCustomerPhone("");
 
       if (onSaleRecorded) onSaleRecorded();
-
     } catch (err) {
-      console.error("Sale Error:", err);
+      console.error(err);
       alert("Error recording sale");
     }
   };
 
   return (
-    <div className="max-w-5xl mx-auto sv-card space-y-10">
+    <div className="max-w-5xl mx-auto space-y-8">
 
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
       <div>
         <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
           Record Sale
@@ -121,35 +123,45 @@ function RecordSaleForm({ onSaleRecorded }) {
 
       <form onSubmit={handleSubmit} className="space-y-8">
 
-        {/* PRODUCT + QUANTITY */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <select
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-            required
-            className="sv-input"
-          >
-            <option value="">Select Product</option>
-            {products.map((p) => (
-              <option key={p._id} value={p._id}>
-                {p.name} (Stock: {p.totalStock ?? 0})
-              </option>
-            ))}
-          </select>
+        {/* ================= PRODUCT SECTION ================= */}
+        <div className="sv-card space-y-5">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            Product Details
+          </h3>
 
-          <input
-            type="number"
-            placeholder="Quantity"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            required
-            min="1"
-            className="sv-input"
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <select
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
+              required
+              className="sv-input"
+            >
+              <option value="">Select Product</option>
+              {products.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.name} (Stock: {p.totalStock ?? 0})
+                </option>
+              ))}
+            </select>
+
+            <input
+              type="number"
+              placeholder="Quantity"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              required
+              min="1"
+              className="sv-input"
+            />
+          </div>
         </div>
 
-        {/* CUSTOMER */}
-        <div className="space-y-4">
+        {/* ================= CUSTOMER SECTION ================= */}
+        <div className="sv-card space-y-5">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            Customer Details
+          </h3>
+
           <select
             value={customerId}
             onChange={(e) => {
@@ -164,7 +176,7 @@ function RecordSaleForm({ onSaleRecorded }) {
             className="sv-input"
           >
             <option value="">Walk-in Customer</option>
-            {customers.map(c => (
+            {customers.map((c) => (
               <option key={c._id} value={c._id}>
                 {c.name}
               </option>
@@ -178,75 +190,102 @@ function RecordSaleForm({ onSaleRecorded }) {
                 type="text"
                 placeholder="Customer Name"
                 value={newCustomerName}
-                onChange={(e) => setNewCustomerName(e.target.value)}
+                onChange={(e) =>
+                  setNewCustomerName(e.target.value)
+                }
                 className="sv-input"
               />
               <input
                 type="text"
                 placeholder="Phone"
                 value={newCustomerPhone}
-                onChange={(e) => setNewCustomerPhone(e.target.value)}
+                onChange={(e) =>
+                  setNewCustomerPhone(e.target.value)
+                }
                 className="sv-input"
               />
             </div>
           )}
         </div>
 
-        {/* PAYMENT */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          <input
-            type="number"
-            placeholder="Payment Received"
-            value={paymentReceived}
-            onChange={(e) => setPaymentReceived(e.target.value)}
-            min="0"
-            className="sv-input"
-          />
+        {/* ================= PAYMENT SECTION ================= */}
+        <div className="sv-card space-y-5">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+            Payment Details
+          </h3>
 
-          <select
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
-            className="sv-input"
-          >
-            <option value="CASH">Cash</option>
-            <option value="UPI">UPI</option>
-            <option value="BANK">Bank</option>
-            <option value="CARD">Card</option>
-            <option value="OTHER">Other</option>
-          </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <input
+              type="number"
+              placeholder="Payment Received"
+              value={paymentReceived}
+              onChange={(e) =>
+                setPaymentReceived(e.target.value)
+              }
+              min="0"
+              className="sv-input"
+            />
 
-          <input
-            type="text"
-            placeholder="Invoice Number (Optional)"
-            value={invoiceNumber}
-            onChange={(e) => setInvoiceNumber(e.target.value)}
-            className="sv-input"
-          />
+            <select
+              value={paymentMethod}
+              onChange={(e) =>
+                setPaymentMethod(e.target.value)
+              }
+              className="sv-input"
+            >
+              <option value="CASH">Cash</option>
+              <option value="UPI">UPI</option>
+              <option value="BANK">Bank</option>
+              <option value="CARD">Card</option>
+              <option value="OTHER">Other</option>
+            </select>
+
+            <input
+              type="text"
+              placeholder="Invoice Number (Optional)"
+              value={invoiceNumber}
+              onChange={(e) =>
+                setInvoiceNumber(e.target.value)
+              }
+              className="sv-input"
+            />
+          </div>
         </div>
 
-        {/* SUMMARY */}
+        {/* ================= SUMMARY ================= */}
         {calculatedAmount > 0 && (
-          <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-5 rounded-xl text-sm space-y-2">
-            <p className="text-gray-600 dark:text-gray-300">
-              Total Amount: <span className="font-semibold text-gray-900 dark:text-white">₹ {calculatedAmount}</span>
-            </p>
-            <p className="text-gray-600 dark:text-gray-300">
-              Payment Status: <span className="font-semibold text-indigo-600 dark:text-indigo-400">{paymentStatus}</span>
-            </p>
-            <p className="text-gray-600 dark:text-gray-300">
-              Amount Due: <span className="font-semibold text-yellow-600 dark:text-yellow-400">₹ {amountDue < 0 ? 0 : amountDue}</span>
-            </p>
+          <div className="sv-card space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Total Amount</span>
+              <span className="font-semibold">
+                ₹ {calculatedAmount}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-gray-500">
+                Payment Status
+              </span>
+              <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                {paymentStatus}
+              </span>
+            </div>
+
+            <div className="flex justify-between">
+              <span className="text-gray-500">
+                Amount Due
+              </span>
+              <span className="font-semibold text-yellow-600 dark:text-yellow-400">
+                ₹ {amountDue < 0 ? 0 : amountDue}
+              </span>
+            </div>
           </div>
         )}
 
-        {/* SUBMIT */}
-        <button
-          type="submit"
-          className="sv-btn-primary w-full"
-        >
+        {/* ================= SUBMIT ================= */}
+        <button type="submit" className="sv-btn-primary w-full">
           Record Sale
         </button>
-
       </form>
     </div>
   );

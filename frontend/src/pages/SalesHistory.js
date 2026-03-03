@@ -12,7 +12,7 @@ function SalesHistory() {
 
   const itemsPerPage = 8;
 
-  /* ================= FETCH SALES ================= */
+  /* ================= FETCH ================= */
   useEffect(() => {
     const fetchSales = async () => {
       try {
@@ -25,7 +25,7 @@ function SalesHistory() {
     fetchSales();
   }, []);
 
-  /* ================= FILTERING ================= */
+  /* ================= FILTER ================= */
   const filteredSales = useMemo(() => {
     return sales.filter((sale) => {
       const saleDate = new Date(sale.createdAt);
@@ -37,8 +37,7 @@ function SalesHistory() {
       const matchesStatus =
         statusFilter === "ALL" || sale.paymentStatus === statusFilter;
 
-      const matchesFrom =
-        !fromDate || saleDate >= new Date(fromDate);
+      const matchesFrom = !fromDate || saleDate >= new Date(fromDate);
 
       const matchesTo =
         !toDate || saleDate <= new Date(toDate + "T23:59:59");
@@ -56,15 +55,11 @@ function SalesHistory() {
     startIndex + itemsPerPage
   );
 
-  const goPrev = () =>
-    setCurrentPage((p) => Math.max(p - 1, 1));
-
+  const goPrev = () => setCurrentPage((p) => Math.max(p - 1, 1));
   const goNext = () =>
-    setCurrentPage((p) =>
-      Math.min(p + 1, totalPages || 1)
-    );
+    setCurrentPage((p) => Math.min(p + 1, totalPages || 1));
 
-  /* ================= CSV EXPORT ================= */
+  /* ================= CSV ================= */
   const exportCSV = () => {
     if (!filteredSales.length) return;
 
@@ -117,7 +112,7 @@ function SalesHistory() {
   return (
     <div className="space-y-8">
 
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
           Sales History
@@ -132,7 +127,6 @@ function SalesHistory() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-          {/* SEARCH */}
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
               Search
@@ -149,7 +143,6 @@ function SalesHistory() {
             />
           </div>
 
-          {/* STATUS */}
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
               Payment Status
@@ -169,7 +162,6 @@ function SalesHistory() {
             </select>
           </div>
 
-          {/* EXPORT */}
           <div className="flex items-end">
             <button
               onClick={exportCSV}
@@ -178,18 +170,15 @@ function SalesHistory() {
               Export CSV
             </button>
           </div>
-
         </div>
 
-        {/* DATE RANGE */}
+        {/* Date Range */}
         <div>
           <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-3">
             Date Range
           </label>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-            {/* FROM */}
             <div className="relative">
               <input
                 type="date"
@@ -206,7 +195,6 @@ function SalesHistory() {
               />
             </div>
 
-            {/* TO */}
             <div className="relative">
               <input
                 type="date"
@@ -222,15 +210,12 @@ function SalesHistory() {
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
               />
             </div>
-
           </div>
         </div>
-
       </div>
 
-      {/* ================= TABLE ================= */}
-      <div className="sv-card p-0 overflow-hidden">
-
+      {/* ================= DESKTOP TABLE ================= */}
+      <div className="hidden md:block sv-card p-0 overflow-hidden">
         {filteredSales.length === 0 ? (
           <div className="p-10 text-center text-gray-500 dark:text-gray-400">
             No matching sales found.
@@ -238,8 +223,7 @@ function SalesHistory() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm min-w-[900px]">
-
+              <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                   <tr className="text-gray-600 dark:text-gray-300 uppercase text-xs tracking-wider">
                     <th className="px-6 py-4 text-left">Date</th>
@@ -258,10 +242,7 @@ function SalesHistory() {
                     const due = sale.totalAmount - paid;
 
                     return (
-                      <tr
-                        key={sale._id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-800 transition"
-                      >
+                      <tr key={sale._id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                         <td className="px-6 py-4">
                           {new Date(sale.createdAt).toLocaleDateString()}
                         </td>
@@ -271,22 +252,14 @@ function SalesHistory() {
                         <td className="px-6 py-4">
                           {sale.customer?.name || "Walk-in"}
                         </td>
+                        <td className="px-6 py-4">₹ {sale.totalAmount}</td>
+                        <td className="px-6 py-4 text-green-600">₹ {paid}</td>
+                        <td className="px-6 py-4 text-yellow-600">₹ {due}</td>
                         <td className="px-6 py-4">
-                          ₹ {sale.totalAmount}
-                        </td>
-                        <td className="px-6 py-4 text-green-600">
-                          ₹ {paid}
-                        </td>
-                        <td className="px-6 py-4 text-yellow-600">
-                          ₹ {due}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              statusStyles[sale.paymentStatus] ||
-                              statusStyles.UNPAID
-                            }`}
-                          >
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            statusStyles[sale.paymentStatus] ||
+                            statusStyles.UNPAID
+                          }`}>
                             {sale.paymentStatus}
                           </span>
                         </td>
@@ -294,41 +267,121 @@ function SalesHistory() {
                     );
                   })}
                 </tbody>
-
               </table>
             </div>
 
-            {/* PAGINATION */}
-            <div className="flex justify-between items-center px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm">
-              <div>
-                Showing {startIndex + 1}–
-                {Math.min(startIndex + itemsPerPage, filteredSales.length)} of{" "}
-                {filteredSales.length}
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={goPrev}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 disabled:opacity-40"
-                >
-                  Previous
-                </button>
-                <span>
-                  {currentPage} / {totalPages || 1}
-                </span>
-                <button
-                  onClick={goNext}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 disabled:opacity-40"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-
+            {/* Pagination */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              goPrev={goPrev}
+              goNext={goNext}
+              startIndex={startIndex}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredSales.length}
+            />
           </>
         )}
+      </div>
+
+      {/* ================= MOBILE CARD VIEW ================= */}
+      <div className="md:hidden space-y-4">
+        {currentSales.map((sale) => {
+          const paid = sale.paymentReceived || 0;
+          const due = sale.totalAmount - paid;
+
+          return (
+            <div key={sale._id} className="sv-card space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-500">
+                  {new Date(sale.createdAt).toLocaleDateString()}
+                </span>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  statusStyles[sale.paymentStatus] ||
+                  statusStyles.UNPAID
+                }`}>
+                  {sale.paymentStatus}
+                </span>
+              </div>
+
+              <div className="font-medium">
+                {sale.product?.name || "Deleted Product"}
+              </div>
+
+              <div className="text-sm text-gray-500">
+                {sale.customer?.name || "Walk-in"}
+              </div>
+
+              <div className="grid grid-cols-3 text-sm pt-2">
+                <div>
+                  <p className="text-gray-400">Total</p>
+                  <p>₹ {sale.totalAmount}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Paid</p>
+                  <p className="text-green-600">₹ {paid}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400">Due</p>
+                  <p className="text-yellow-600">₹ {due}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {filteredSales.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            goPrev={goPrev}
+            goNext={goNext}
+            startIndex={startIndex}
+            itemsPerPage={itemsPerPage}
+            totalItems={filteredSales.length}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ================= PAGINATION COMPONENT ================= */
+
+function Pagination({
+  currentPage,
+  totalPages,
+  goPrev,
+  goNext,
+  startIndex,
+  itemsPerPage,
+  totalItems,
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row justify-between items-center gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm">
+      <div>
+        Showing {startIndex + 1}–
+        {Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems}
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={goPrev}
+          disabled={currentPage === 1}
+          className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 disabled:opacity-40"
+        >
+          Prev
+        </button>
+        <span>
+          {currentPage} / {totalPages || 1}
+        </span>
+        <button
+          onClick={goNext}
+          disabled={currentPage === totalPages}
+          className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 disabled:opacity-40"
+        >
+          Next
+        </button>
       </div>
     </div>
   );

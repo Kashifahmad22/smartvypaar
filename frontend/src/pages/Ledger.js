@@ -3,7 +3,7 @@ import {
   getParties,
   getPartyById,
   getLedgerHistory,
-  addLedgerEntry
+  addLedgerEntry,
 } from "../services/api";
 
 function Ledger() {
@@ -58,7 +58,7 @@ function Ledger() {
         partyId: selectedParty,
         transactionType,
         amount: Number(amount),
-        paymentMethod
+        paymentMethod,
       });
 
       setAmount("");
@@ -68,7 +68,6 @@ function Ledger() {
 
       const partyRes = await getPartyById(selectedParty);
       setPartyDetails(partyRes.data.data);
-
     } catch (err) {
       console.error(err);
     }
@@ -94,10 +93,9 @@ function Ledger() {
         </p>
       </div>
 
-      {/* FILTER CARD */}
+      {/* FILTER */}
       <div className="sv-card">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
           <select
             value={type}
             onChange={(e) => {
@@ -123,7 +121,6 @@ function Ledger() {
               </option>
             ))}
           </select>
-
         </div>
       </div>
 
@@ -150,7 +147,6 @@ function Ledger() {
       {selectedParty && (
         <div className="sv-card">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-
             <select
               value={transactionType}
               onChange={(e) => setTransactionType(e.target.value)}
@@ -180,54 +176,88 @@ function Ledger() {
               <option value="OTHER">Other</option>
             </select>
 
-            <button
-              onClick={handleAddEntry}
-              className="sv-btn-primary"
-            >
+            <button onClick={handleAddEntry} className="sv-btn-primary">
               Add Entry
             </button>
-
           </div>
         </div>
       )}
 
-      {/* TABLE */}
+      {/* ================= DESKTOP TABLE ================= */}
       {ledgerEntries.length > 0 && (
-        <div className="sv-card p-0 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[700px]">
-
-              <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                <tr className="text-gray-600 dark:text-gray-300 uppercase text-xs tracking-wider">
-                  <th className="px-6 py-4 text-left">Date</th>
-                  <th className="px-6 py-4 text-left">Type</th>
-                  <th className="px-6 py-4 text-left">Amount</th>
-                  <th className="px-6 py-4 text-left">Method</th>
-                  <th className="px-6 py-4 text-left">Running Balance</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {ledgerEntries.map((entry) => (
-                  <tr key={entry._id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
-                    <td className="px-6 py-4">
-                      {new Date(entry.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4">{entry.transactionType}</td>
-                    <td className="px-6 py-4">₹ {entry.amount}</td>
-                    <td className="px-6 py-4">{entry.paymentMethod}</td>
-                    <td className="px-6 py-4 font-medium">
-                      ₹ {entry.runningBalance}
-                    </td>
+        <>
+          <div className="hidden md:block sv-card p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                  <tr className="text-gray-600 dark:text-gray-300 uppercase text-xs tracking-wider">
+                    <th className="px-6 py-4 text-left">Date</th>
+                    <th className="px-6 py-4 text-left">Type</th>
+                    <th className="px-6 py-4 text-left">Amount</th>
+                    <th className="px-6 py-4 text-left">Method</th>
+                    <th className="px-6 py-4 text-left">Running Balance</th>
                   </tr>
-                ))}
-              </tbody>
+                </thead>
 
-            </table>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {ledgerEntries.map((entry) => (
+                    <tr
+                      key={entry._id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                    >
+                      <td className="px-6 py-4">
+                        {new Date(entry.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">{entry.transactionType}</td>
+                      <td className="px-6 py-4">₹ {entry.amount}</td>
+                      <td className="px-6 py-4">{entry.paymentMethod}</td>
+                      <td className="px-6 py-4 font-medium">
+                        ₹ {entry.runningBalance}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
 
+          {/* ================= MOBILE CARD VIEW ================= */}
+          <div className="md:hidden space-y-4">
+            {ledgerEntries.map((entry) => (
+              <div key={entry._id} className="sv-card space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-500">
+                    {new Date(entry.createdAt).toLocaleDateString()}
+                  </span>
+                  <span className="text-xs font-medium uppercase">
+                    {entry.transactionType}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-400">Amount</p>
+                    <p>₹ {entry.amount}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-400">Method</p>
+                    <p>{entry.paymentMethod}</p>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-gray-400 text-xs">
+                    Running Balance
+                  </p>
+                  <p className="font-medium">
+                    ₹ {entry.runningBalance}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
