@@ -6,12 +6,15 @@ const helmet = require("helmet");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 
+const reorderRoutes = require("./routes/reorderRoutes");
 const authRoutes = require("./routes/authRoutes");
 const productRoutes = require("./routes/productRoutes");
 const saleRoutes = require("./routes/saleRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const errorMiddleware = require("./middleware/errorMiddleware");
 const profileRoutes = require("./routes/profileRoutes");
+const advancedAnalyticsRoutes = require("./routes/advancedAnalyticsRoutes");
+const insightsRoutes = require("./routes/insightsRoutes");
 
 
 /* ==============================
@@ -50,7 +53,7 @@ app.use(
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10000,
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -87,11 +90,15 @@ app.get("/", (req, res) => {
   res.send("SV backend is running 🚀");
 });
 
+app.use("/api/reorder", reorderRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/sales", saleRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/analytics", advancedAnalyticsRoutes);
+app.use("/api/insights", insightsRoutes);
+
 
 /* ==============================
    GLOBAL ERROR HANDLER

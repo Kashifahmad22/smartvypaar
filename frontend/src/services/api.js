@@ -1,4 +1,5 @@
 import axios from "axios";
+import { AppleIcon } from "lucide-react";
 
 /* ==============================
    AXIOS INSTANCE
@@ -48,6 +49,15 @@ export const getTopProducts = () =>
 export const getWeeklyProfit = () =>
   API.get("/analytics/weekly-profit");
 
+/* =============================
+SMART RECOMMENDATIONS 
+==============================*/
+export const getReorderRecommendations = async () => {
+  const res = await API.get("/reorder/recommendations");
+  return res.data.data;
+};
+
+
 /* ==============================
    PRODUCTS
 ============================== */
@@ -74,6 +84,18 @@ export const updateBatchQuantity = (batchId, data) =>
 
 export const deleteBatch = (batchId) =>
   API.delete(`/products/batch/${batchId}`);
+
+export const getGrowthAnalytics = () =>
+  API.get("/analytics/growth");
+
+export const getTopProfitProducts = () =>
+  API.get("/analytics/top-profit");
+
+export const getDeadStockProducts = () =>
+  API.get("/analytics/dead-stock");
+
+export const getTrendAnalytics = (period) =>
+  API.get(`/analytics/trend?period=${period}`);
 
 
 /* ==============================

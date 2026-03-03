@@ -100,12 +100,17 @@ const productSchema = new mongoose.Schema(
       default: "",
     },
 
+
     reorderThreshold: {
       type: Number,
       default: 10,
       min: 0,
     },
-
+    leadTimeDays: {
+      type: Number,
+      default: 3,
+      min: 0
+    },
     batches: {
       type: [batchSchema],
       default: [],
@@ -130,7 +135,7 @@ const productSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true,
-    },
+    }
   },
   { timestamps: true }
 );
@@ -140,5 +145,10 @@ productSchema.index({ owner: 1, name: 1 });
 productSchema.index({ owner: 1, category: 1 });
 productSchema.index({ owner: 1, barcode: 1 });
 productSchema.index({ owner: 1, "batches.expiryDate": 1 });
+
+// Additional performance indexes
+productSchema.index({ owner: 1, totalStock: 1 });
+productSchema.index({ owner: 1, reorderThreshold: 1 });
+productSchema.index({ owner: 1, isActive: 1 });
 
 module.exports = mongoose.model("Product", productSchema);

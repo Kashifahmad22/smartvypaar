@@ -306,3 +306,117 @@ exports.getBusinessHealth = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// =====================================
+// UNIFIED ANALYTICS SUMMARY (ENTERPRISE)
+// =====================================
+exports.getUnifiedSummary = async (req, res) => {
+  try {
+    const ownerId = new mongoose.Types.ObjectId(req.user._id);
+    const { period = "weekly" } = req.query;
+
+    const now = new Date();
+    let startDate;
+
+    if (period === "weekly") {
+      startDate = new Date();
+      startDate.setDate(now.getDate() - 7);
+    } 
+    else if (period === "monthly") {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } 
+    else if (period === "yearly") {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    } 
+    else {
+      startDate = new Date(0);
+    }
+
+    // ===============================
+    // AGGREGATE SALES FOR PERIOD
+    // ===============================
+    const salesData = await Sale.aggregate([
+      {
+        $match: {
+          owner: ownerId,
+          createdAt: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: "$product",
+          totalRevenue: { $sum: "$totalAmount" },
+          totalProfit: { $sum: "$totalProfit" },
+          totalSold: { $sum: "$quantity" }
+        }
+      },
+      { $sort: { totalSold: -1 } }
+    ]);
+
+    // ===============================
+    // TOTAL SUMMARY
+    // ===============================
+    const totals = await Sale.aggregate([
+      {
+        $match: {
+          owner: ownerId,
+          createdAt: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          revenue: { $sum: "$totalAmount" },
+          profit: { $sum: "$totalProfit" },
+          salesCount: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const revenue = totals[0]?.revenue || 0;
+    const profit = totals[0]?.profit || 0;
+    const salesCount = totals[0]?.salesCount || 0;
+
+    // ===============================
+    // PRODUCT NAME LOOKUP
+    // ===============================
+    const productIds = salesData.map(p => p._id);
+
+    const products = await Product.find({
+      _id: { $in: productIds }
+    }).select("name").lean();
+
+    const productMap = {};
+    products.forEach(p => {
+      productMap[p._id.toString()] = p.name;
+    });
+
+   const topProducts = salesData.map(p => ({
+  productId: p._id,
+  name: productMap[p._id.toString()] || "Unknown Product",
+  quantity: p.totalSold,
+  revenue: p.totalRevenue,
+  profit: p.totalProfit
+}));
+
+    const bestSeller = topProducts[0] || null;
+    const slowestSeller =
+      topProducts.length > 0
+        ? topProducts[topProducts.length - 1]
+        : null;
+
+    res.json({
+      period,
+      revenue,
+      profit,
+      salesCount,
+      bestSeller,
+      slowestSeller,
+      topProducts
+    });
+
+  } catch (error) {
+    logError("Unified Summary Error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

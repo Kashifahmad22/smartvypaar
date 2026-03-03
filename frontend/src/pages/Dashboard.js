@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 import RevenueChart from "../components/RevenueChart";
 import ProfitChart from "../components/ProfitChart";
 import BusinessHealthCard from "../components/BusinessHealthCard";
+import SmartInsightsCard from "../components/SmartInsightsCard";
 
 function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -119,6 +120,9 @@ function Dashboard() {
       )}
 
       {health && <BusinessHealthCard data={health} />}
+
+      {/* ================= SMART INSIGHTS (NEW) ================= */}
+      <SmartInsightsCard />
 
       <h1 className="text-4xl font-bold text-white">
         Dashboard Overview

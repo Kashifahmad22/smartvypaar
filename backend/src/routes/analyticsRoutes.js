@@ -8,16 +8,22 @@ const {
   getTopProducts,
   getWeeklyProfit,
   getBusinessHealth,
-  getMonthlySummary   // 🔥 NEW
+  getMonthlySummary,
+  getUnifiedSummary   // ✅ ADD THIS
 } = require("../controllers/analyticsController");
 
-// Existing routes
+// ===============================
+// EXISTING ROUTES (KEEP FOR NOW)
+// ===============================
 router.get("/dashboard", protect, getDashboardStats);
 router.get("/top-products", protect, getTopProducts);
 router.get("/weekly-profit", protect, getWeeklyProfit);
 router.get("/business-health", protect, getBusinessHealth);
-
-// 🔥 NEW Monthly Summary Route
 router.get("/monthly-summary", protect, getMonthlySummary);
+
+// ===============================
+// 🔥 NEW UNIFIED ENGINE
+// ===============================
+router.get("/summary", protect, getUnifiedSummary);
 
 module.exports = router;
