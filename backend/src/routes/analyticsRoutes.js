@@ -9,7 +9,8 @@ const {
   getWeeklyProfit,
   getBusinessHealth,
   getMonthlySummary,
-  getUnifiedSummary   // ✅ ADD THIS
+  getUnifiedSummary ,  // ✅ ADD THIS
+  getTrendAnalytics
 } = require("../controllers/analyticsController");
 
 // ===============================
@@ -20,6 +21,8 @@ router.get("/top-products", protect, getTopProducts);
 router.get("/weekly-profit", protect, getWeeklyProfit);
 router.get("/business-health", protect, getBusinessHealth);
 router.get("/monthly-summary", protect, getMonthlySummary);
+router.get("/trend", protect, getTrendAnalytics);
+
 
 // ===============================
 // 🔥 NEW UNIFIED ENGINE

@@ -32,73 +32,63 @@ function Insights() {
 
   if (loading) {
     return (
-      <div className="text-gray-400 text-lg">
-        Loading Insights...
+      <div className="flex items-center justify-center min-h-[40vh] text-gray-500 dark:text-gray-400">
+        Loading Intelligence...
       </div>
     );
   }
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-14">
 
       {/* ================= EXECUTIVE SUMMARY ================= */}
       {summary && (
-        <div className="bg-gray-900 border border-gray-700 p-8 rounded-3xl">
-          <h1 className="text-3xl font-bold text-white mb-6">
-            🧠 Business Intelligence Overview
-          </h1>
+        <div className="relative bg-gradient-to-br from-white to-gray-50 dark:from-[#111827] dark:to-[#0f172a] border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-3xl shadow-lg">
 
-          <div className="grid md:grid-cols-4 gap-6 text-sm text-gray-300">
-            <InsightStat
-              label="Stockout Risks"
-              value={summary.stockoutRisks}
-              color="text-red-400"
-            />
-            <InsightStat
-              label="Dead Stock"
-              value={summary.deadStockCount}
-              color="text-yellow-400"
-            />
-            <InsightStat
-              label="Slow Moving"
-              value={summary.slowMovingCount}
-              color="text-blue-400"
-            />
-            <InsightStat
-              label="Fast Moving"
-              value={summary.fastMovingCount}
-              color="text-green-400"
-            />
+          <div className="mb-10">
+            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
+              Business Intelligence
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
+              Operational risk signals, inventory exposure and predictive revenue insights.
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 mt-8">
+          {/* Core Signals */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <InsightStat label="Stockout Risks" value={summary.stockoutRisks} accent="red" />
+            <InsightStat label="Dead Stock" value={summary.deadStockCount} accent="yellow" />
+            <InsightStat label="Slow Moving" value={summary.slowMovingCount} accent="blue" />
+            <InsightStat label="Fast Moving" value={summary.fastMovingCount} accent="green" />
+          </div>
+
+          {/* Financial Exposure */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
             <InsightStat
-              label="Total Inventory Value"
+              label="Inventory Value"
               value={`₹ ${summary.inventoryValue?.toLocaleString()}`}
-              color="text-purple-400"
+              accent="purple"
             />
             <InsightStat
               label="Dead Stock Value"
               value={`₹ ${summary.deadStockValue?.toLocaleString()}`}
-              color="text-red-500"
+              accent="red"
             />
-          </div>
-
-          <div className="mt-8">
             <InsightStat
               label="7-Day Revenue Forecast"
               value={`₹ ${summary.projected7DayRevenue?.toLocaleString()}`}
-              color="text-emerald-400"
+              accent="emerald"
             />
           </div>
+
         </div>
       )}
 
-      {/* ================= TOP MARGIN PRODUCTS ================= */}
+      {/* ================= TOP MARGIN ================= */}
       {summary?.top3MarginProducts?.length > 0 && (
-        <Section title="💰 Top 3 Margin Contributors (Last 30 Days)">
+        <Section title="Top Margin Contributors (30 Days)">
           {summary.top3MarginProducts.map((item, index) => (
-            <TableRow
+            <Row
               key={index}
               title={item.name}
               subtitle="30 Day Profit"
@@ -108,29 +98,29 @@ function Insights() {
         </Section>
       )}
 
-      {/* ================= REORDER RISK ================= */}
-      <Section title="📦 Reorder Risk (Sorted by Urgency)">
+      {/* ================= REORDER ================= */}
+      <Section title="Reorder Risk Priority">
         {reorder.length === 0 ? (
           <Empty text="No immediate stockout risks." />
         ) : (
           reorder.map(item => (
-            <TableRow
+            <Row
               key={item.productId}
               title={item.name}
-              subtitle={`Days Until Stockout: ${item.daysUntilStockout}`}
-              right={`Risk: ${item.riskLevel}`}
+              subtitle={`Stockout in ${item.daysUntilStockout} days`}
+              right={item.riskLevel}
             />
           ))
         )}
       </Section>
 
       {/* ================= VELOCITY ================= */}
-      <Section title="🚀 Velocity Classification">
+      <Section title="Velocity Classification">
         {velocity.length === 0 ? (
           <Empty text="No velocity data available." />
         ) : (
           velocity.map(item => (
-            <TableRow
+            <Row
               key={item.productId}
               title={item.name}
               subtitle={`Avg Daily Sales: ${item.avgDailySales}`}
@@ -144,51 +134,69 @@ function Insights() {
   );
 }
 
-/* ---------- REUSABLE UI COMPONENTS ---------- */
+/* ---------- COMPONENTS ---------- */
 
 function Section({ title, children }) {
   return (
-    <div className="bg-gray-900 border border-gray-700 p-8 rounded-3xl">
-      <h2 className="text-xl font-semibold text-white mb-6">
+    <div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-2xl shadow-sm">
+      <h2 className="text-xl font-semibold tracking-tight mb-6">
         {title}
       </h2>
-      <div className="space-y-4">{children}</div>
+      <div className="divide-y divide-gray-200 dark:divide-gray-800">
+        {children}
+      </div>
     </div>
   );
 }
 
-function InsightStat({ label, value, color }) {
+function InsightStat({ label, value, accent }) {
+  const accentMap = {
+    red: "text-red-500",
+    yellow: "text-yellow-500",
+    blue: "text-blue-500",
+    green: "text-green-500",
+    purple: "text-purple-500",
+    emerald: "text-emerald-500"
+  };
+
   return (
-    <div className="bg-gray-800 p-6 rounded-2xl border border-gray-700">
-      <p className="text-xs uppercase text-gray-400 mb-2">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
+      <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
         {label}
       </p>
-      <p className={`text-2xl font-bold ${color}`}>
+      <p className={`text-2xl font-semibold ${accentMap[accent]}`}>
         {value}
       </p>
     </div>
   );
 }
 
-function TableRow({ title, subtitle, right }) {
+function Row({ title, subtitle, right }) {
   return (
-    <div className="flex justify-between items-center bg-gray-800 p-4 rounded-xl border border-gray-700">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-4 gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition rounded-lg px-2">
+
       <div>
-        <p className="text-white font-medium">{title}</p>
-        <p className="text-gray-400 text-sm">{subtitle}</p>
+        <p className="font-medium text-gray-900 dark:text-white">
+          {title}
+        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          {subtitle}
+        </p>
       </div>
-      <div className="text-sm text-blue-400 font-medium">
+
+      <div className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
         {right}
       </div>
+
     </div>
   );
 }
 
 function Empty({ text }) {
   return (
-    <p className="text-gray-400 text-sm">
+    <div className="py-6 text-gray-500 dark:text-gray-400 text-sm">
       {text}
-    </p>
+    </div>
   );
 }
 

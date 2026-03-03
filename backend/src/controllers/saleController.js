@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
 const Sale = require("../models/Sale");
 const Product = require("../models/Product");
+const { processLedgerEntry } = require("./ledgerController");
 const { createSaleSchema } = require("../validations/saleValidation");
 const AppError = require("../utils/AppError");
 
-
 // =====================================
-// CREATE SALE (Enterprise FEFO Engine)
+// CREATE SALE (Inventory + Ledger Engine)
 // =====================================
 exports.createSale = async (req, res, next) => {
   const session = await mongoose.startSession();
@@ -17,12 +17,22 @@ exports.createSale = async (req, res, next) => {
 
     if (!parsed.success) {
       throw new AppError(
-        parsed.error.errors[0].message,
+        parsed.error.issues?.[0]?.message || "Validation failed",
         400
       );
     }
 
-    const { productId, quantity } = parsed.data;
+    const {
+      productId,
+      quantity,
+      customerId,
+      paymentReceived = 0,
+      paymentMethod = "CASH",
+      taxableAmount = 0,
+      gstRate = 0,
+      gstAmount = 0,
+      invoiceNumber
+    } = parsed.data;
 
     const product = await Product.findOne({
       _id: productId,
@@ -42,7 +52,7 @@ exports.createSale = async (req, res, next) => {
     let totalProfit = 0;
     const batchBreakdown = [];
 
-    // 🔥 FEFO (First Expiry First Out)
+    // ================= FEFO =================
     const sortedBatches = product.batches
       .filter(b => b.quantity > 0)
       .sort((a, b) => {
@@ -83,12 +93,24 @@ exports.createSale = async (req, res, next) => {
       throw new AppError("Stock deduction mismatch", 500);
     }
 
-    // 🔥 Update product intelligence
     product.totalStock -= quantity;
     product.totalSoldQuantity += quantity;
     product.lastSoldAt = new Date();
 
     await product.save({ session });
+
+    // ================= PAYMENT CALCULATION =================
+    const amountPaid = Number(paymentReceived) || 0;
+
+    if (amountPaid > totalAmount) {
+      throw new AppError("Payment cannot exceed sale amount", 400);
+    }
+
+    const amountDue = totalAmount - amountPaid;
+
+    let paymentStatus = "UNPAID";
+    if (amountDue === 0) paymentStatus = "PAID";
+    else if (amountPaid > 0) paymentStatus = "PARTIAL";
 
     const [sale] = await Sale.create(
       [{
@@ -97,10 +119,54 @@ exports.createSale = async (req, res, next) => {
         quantity,
         batchBreakdown,
         totalAmount,
-        totalProfit
+        totalProfit,
+        customer: customerId || null,
+        paymentReceived: amountPaid,
+        paymentMethod,
+        taxableAmount,
+        gstRate,
+        gstAmount,
+        invoiceNumber,
+        amountDue,
+        paymentStatus
       }],
       { session }
     );
+
+    // =====================================
+    // 🔥 LEDGER ENGINE (Single Source of Truth)
+    // =====================================
+    if (customerId) {
+
+      // 1️⃣ SALE ENTRY
+      await processLedgerEntry({
+        ownerId: req.user._id,
+        partyId: customerId,
+        transactionType: "DEBIT",
+        amount: totalAmount,
+        taxableAmount,
+        gstRate,
+        gstAmount,
+        invoiceNumber,
+        description: `Sale Invoice ${invoiceNumber || ""}`,
+        paymentMethod,
+        session
+      });
+
+      // 2️⃣ PAYMENT ENTRY
+      if (amountPaid > 0) {
+        await processLedgerEntry({
+          ownerId: req.user._id,
+          partyId: customerId,
+          transactionType: "CREDIT",
+          amount: amountPaid,
+          invoiceNumber,
+          description: `Payment received for invoice ${invoiceNumber || ""}`,
+          paymentMethod,
+          session
+        });
+      }
+    }
 
     await session.commitTransaction();
     session.endSession();
@@ -120,9 +186,8 @@ exports.createSale = async (req, res, next) => {
   }
 };
 
-
 // =====================================
-// GET ALL SALES (Owner Safe)
+// GET ALL SALES
 // =====================================
 exports.getAllSales = async (req, res, next) => {
   try {
@@ -130,6 +195,7 @@ exports.getAllSales = async (req, res, next) => {
       owner: req.user._id
     })
       .populate("product", "name")
+      .populate("customer", "name")
       .sort({ createdAt: -1 })
       .lean();
 

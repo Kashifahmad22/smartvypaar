@@ -4,22 +4,17 @@ import { createProduct } from "../services/api";
 function AddProductForm({ onProductAdded }) {
 
   const initialState = {
-    // Basic
     name: "",
     brand: "",
     category: "",
     unit: "pcs",
     packageSize: "",
-
-    // Pricing
     costPrice: "",
     sellingPrice: "",
     mrp: "",
     discount: "",
     gstRate: "",
     hsnCode: "",
-
-    // Stock
     stockQuantity: "",
     reorderThreshold: "",
     batchNumber: "",
@@ -35,50 +30,56 @@ function AddProductForm({ onProductAdded }) {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  try {
-    await createProduct({
-      name: form.name.trim(),
-      brand: form.brand,
-      category: form.category,
-      subcategory: form.subcategory,
-      barcode: form.barcode,
-      sku: form.sku,
-      unit: form.unit,
-      packageSize: form.packageSize,
-      reorderThreshold: Number(form.reorderThreshold),
+    try {
+      await createProduct({
+        name: form.name.trim(),
+        brand: form.brand,
+        category: form.category,
+        subcategory: form.subcategory,
+        barcode: form.barcode,
+        sku: form.sku,
+        unit: form.unit,
+        packageSize: form.packageSize,
+        reorderThreshold: Number(form.reorderThreshold),
 
-      batchNumber: form.batchNumber,
-      purchaseDate: form.purchaseDate,
-      expiryDate: form.expiryDate || null,
-      costPrice: Number(form.costPrice),
-      sellingPrice: Number(form.sellingPrice),
-      mrp: Number(form.mrp),
-      quantity: Number(form.stockQuantity), // ✅ FIXED
-      supplierName: form.supplierName,
-      invoiceNumber: form.invoiceNumber
-    });
+        batchNumber: form.batchNumber,
+        purchaseDate: form.purchaseDate,
+        expiryDate: form.expiryDate || null,
+        costPrice: Number(form.costPrice),
+        sellingPrice: Number(form.sellingPrice),
+        mrp: Number(form.mrp),
+        quantity: Number(form.stockQuantity),
+        supplierName: form.supplierName,
+        invoiceNumber: form.invoiceNumber
+      });
 
-    setForm(initialState);
+      setForm(initialState);
 
-    if (onProductAdded) onProductAdded();
+      if (onProductAdded) onProductAdded();
 
-  } catch (err) {
-    console.error("Add Product Error:", err);
-  }
-};
+    } catch (err) {
+      console.error("Add Product Error:", err);
+    }
+  };
 
   return (
-    <div className="max-w-6xl mx-auto bg-[#111827] border border-gray-700 p-10 rounded-3xl shadow-xl space-y-10">
+    <div className="max-w-6xl mx-auto bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 p-6 sm:p-8 lg:p-10 rounded-3xl shadow-sm space-y-12">
 
-      <h2 className="text-3xl font-bold text-white">
-        Add FMCG Product
-      </h2>
+      {/* HEADER */}
+      <div>
+        <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
+          Add Product
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          Register a new product with pricing, tax and stock details.
+        </p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-10">
+      <form onSubmit={handleSubmit} className="space-y-12">
 
-        {/* ================= BASIC DETAILS ================= */}
+        {/* BASIC DETAILS */}
         <Section title="Basic Details">
           <Grid>
             <InputField name="name" placeholder="Product Name" value={form.name} onChange={handleChange} required />
@@ -90,7 +91,13 @@ function AddProductForm({ onProductAdded }) {
               name="unit"
               value={form.unit}
               onChange={handleChange}
-              className="bg-[#1f2937] border border-gray-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition w-full"
+              className="
+                w-full px-4 py-3 rounded-xl text-sm transition-all duration-200
+                bg-gray-100 dark:bg-gray-800
+                border border-gray-300 dark:border-gray-700
+                text-gray-900 dark:text-gray-100
+                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
+              "
             >
               <option value="pcs">Pieces</option>
               <option value="kg">Kg</option>
@@ -102,7 +109,7 @@ function AddProductForm({ onProductAdded }) {
           </Grid>
         </Section>
 
-        {/* ================= PRICING ================= */}
+        {/* PRICING */}
         <Section title="Pricing">
           <Grid>
             <InputField type="number" name="costPrice" placeholder="Cost Price" value={form.costPrice} onChange={handleChange} required />
@@ -114,7 +121,7 @@ function AddProductForm({ onProductAdded }) {
           </Grid>
         </Section>
 
-        {/* ================= STOCK & BATCH ================= */}
+        {/* STOCK & BATCH */}
         <Section title="Stock & Batch Information">
           <Grid>
             <InputField type="number" name="stockQuantity" placeholder="Opening Stock" value={form.stockQuantity} onChange={handleChange} required />
@@ -126,12 +133,15 @@ function AddProductForm({ onProductAdded }) {
           </Grid>
         </Section>
 
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-2xl transition shadow-lg text-lg"
-        >
-          Add Product
-        </button>
+        {/* SUBMIT BUTTON */}
+        <div>
+          <button
+            type="submit"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 sm:py-4 rounded-xl transition shadow-sm text-base sm:text-lg"
+          >
+            Add Product
+          </button>
+        </div>
 
       </form>
     </div>
@@ -144,7 +154,7 @@ function AddProductForm({ onProductAdded }) {
 function Section({ title, children }) {
   return (
     <div className="space-y-6">
-      <h3 className="text-white text-lg font-semibold border-b border-gray-700 pb-2">
+      <h3 className="text-lg font-semibold border-b border-gray-200 dark:border-gray-800 pb-3">
         {title}
       </h3>
       {children}
@@ -154,13 +164,20 @@ function Section({ title, children }) {
 
 function Grid({ children }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
       {children}
     </div>
   );
 }
 
-function InputField({ type = "text", name, placeholder, value, onChange, required }) {
+function InputField({
+  type = "text",
+  name,
+  placeholder,
+  value,
+  onChange,
+  required
+}) {
   return (
     <input
       type={type}
@@ -169,7 +186,14 @@ function InputField({ type = "text", name, placeholder, value, onChange, require
       value={value}
       onChange={onChange}
       required={required}
-      className="bg-[#1f2937] border border-gray-700 text-white placeholder-gray-400 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition w-full"
+      className="
+        w-full px-4 py-3 rounded-xl text-sm transition-all duration-200
+        bg-gray-100 dark:bg-gray-800
+        border border-gray-300 dark:border-gray-700
+        text-gray-900 dark:text-gray-100
+        placeholder-gray-500 dark:placeholder-gray-400
+        focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
+      "
     />
   );
 }

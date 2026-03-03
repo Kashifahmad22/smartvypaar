@@ -85,6 +85,59 @@ exports.getDashboardStats = async (req, res) => {
   }
 };
 
+
+
+
+// ==========================================
+// TREND ANALYTICS (Revenue + Profit)
+// ==========================================
+exports.getTrendAnalytics = async (req, res, next) => {
+  try {
+    const ownerId = req.user._id;
+    const period = req.query.period || "7d";
+
+    let days = 7;
+
+    if (period === "30d") days = 30;
+    if (period === "90d") days = 90;
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const sales = await Sale.aggregate([
+      {
+        $match: {
+          owner: ownerId,
+          createdAt: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+          },
+          revenue: { $sum: "$totalAmount" },
+          profit: { $sum: "$totalProfit" }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    const formatted = sales.map(item => ({
+      label: item._id,
+      revenue: item.revenue,
+      profit: item.profit
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: formatted
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
 // =====================================
 // MONTHLY SUMMARY
 // =====================================

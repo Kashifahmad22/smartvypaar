@@ -34,15 +34,11 @@ function ProductInventoryTable() {
   const handleBatchSubmit = async (productId) => {
     try {
       await restockProduct(productId, {
-        batchNumber: batchForm.batchNumber,
-        purchaseDate: batchForm.purchaseDate,
-        expiryDate: batchForm.expiryDate || null,
+        ...batchForm,
         costPrice: Number(batchForm.costPrice),
         sellingPrice: Number(batchForm.sellingPrice),
         mrp: Number(batchForm.mrp),
-        quantity: Number(batchForm.quantity),
-        supplierName: batchForm.supplierName || "",
-        invoiceNumber: batchForm.invoiceNumber || ""
+        quantity: Number(batchForm.quantity)
       });
 
       setActiveProduct(null);
@@ -79,13 +75,12 @@ function ProductInventoryTable() {
   };
 
   return (
-    <div className="bg-[#111827] border border-gray-700 p-8 rounded-3xl shadow-xl">
-      <h2 className="text-2xl font-bold text-white mb-6">
-        Product Inventory
-      </h2>
+    <div className="space-y-6">
 
       {products.length === 0 ? (
-        <p className="text-gray-400">No products available.</p>
+        <p className="text-gray-500 dark:text-gray-400">
+          No products available.
+        </p>
       ) : (
         <>
           <div className="space-y-6">
@@ -105,39 +100,40 @@ function ProductInventoryTable() {
               return (
                 <div
                   key={product._id}
-                  className="border border-gray-700 rounded-xl p-5 bg-[#0f172a]"
+                  className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm"
                 >
-                  {/* Header */}
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="text-white font-semibold text-lg">
+
+                  {/* HEADER */}
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
                         {product.name}
                       </h3>
 
-                      <p className="text-gray-400 text-sm">
-                        Stock: {product.totalStock} | Reorder:{" "}
-                        {product.reorderThreshold}
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Stock: {product.totalStock} | Reorder: {product.reorderThreshold}
                       </p>
 
                       {expiringCount > 0 && (
-                        <span className="inline-block mt-2 text-xs bg-orange-600 px-2 py-1 rounded text-white">
+                        <span className="inline-block mt-2 text-xs bg-orange-500 text-white px-2 py-1 rounded-md">
                           {expiringCount} Expiring Soon
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-wrap items-center gap-3">
+
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
                           isLow
-                            ? "bg-red-900/40 text-red-400"
-                            : "bg-green-900/40 text-green-400"
+                            ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400"
+                            : "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400"
                         }`}
                       >
                         {isLow ? "Low Stock" : "Healthy"}
                       </span>
 
-                      {/* Spring Animated Expand Button */}
                       <button
                         onClick={() =>
                           setExpandedProduct(
@@ -146,24 +142,9 @@ function ProductInventoryTable() {
                               : product._id
                           )
                         }
-                        className="text-sm text-gray-300 hover:text-white flex items-center gap-1"
+                        className="text-sm text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
                       >
                         {expandedProduct === product._id ? "Hide" : "View"}
-
-                        <motion.span
-                          animate={{
-                            rotate:
-                              expandedProduct === product._id
-                                ? 180
-                                : 0
-                          }}
-                          transition={{
-                            type: "spring",
-                            stiffness: 200
-                          }}
-                        >
-                          ▼
-                        </motion.span>
                       </button>
 
                       <button
@@ -174,165 +155,107 @@ function ProductInventoryTable() {
                               : product._id
                           )
                         }
-                        className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded-lg text-white text-sm"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-lg transition"
                       >
                         Add Batch
                       </button>
+
                     </div>
                   </div>
 
-                  {/* Spring Animated Batch Section */}
-                  <AnimatePresence initial={false}>
+                  {/* BATCHES */}
+                  <AnimatePresence>
                     {expandedProduct === product._id && (
                       <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 120,
-                          damping: 18
-                        }}
-                        className="overflow-hidden mt-4 border-t border-gray-700 pt-4"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="mt-6 space-y-4 border-t border-gray-200 dark:border-gray-800 pt-6"
                       >
-                        <div className="space-y-4">
-                          {product.batches.length === 0 ? (
-                            <p className="text-gray-400 text-sm">
-                              No batches available.
-                            </p>
-                          ) : (
-                            product.batches.map((batch) => {
-                              const isExpired =
-                                batch.expiryDate &&
-                                new Date(batch.expiryDate) <
-                                  new Date();
+                        {product.batches.length === 0 ? (
+                          <p className="text-gray-500 dark:text-gray-400 text-sm">
+                            No batches available.
+                          </p>
+                        ) : (
+                          product.batches.map((batch) => {
+                            const isExpired =
+                              batch.expiryDate &&
+                              new Date(batch.expiryDate) < new Date();
 
-                              return (
-                                <motion.div
-                                  key={batch._id}
-                                  initial={{ opacity: 0, y: -10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{
-                                    delay: 0.05
-                                  }}
-                                  className={`p-4 rounded-xl border ${
-                                    isExpired
-                                      ? "border-red-700 bg-red-900/20"
-                                      : "border-gray-700 bg-[#1e293b]"
-                                  }`}
-                                >
-                                  <div className="flex justify-between">
-                                    <div className="space-y-1">
-                                      <p className="text-white font-semibold">
-                                        Batch: {batch.batchNumber}
-                                      </p>
+                            return (
+                              <div
+                                key={batch._id}
+                                className={`p-4 rounded-xl border ${
+                                  isExpired
+                                    ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20"
+                                    : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                                }`}
+                              >
+                                <div className="grid sm:grid-cols-2 gap-4">
 
-                                      <p className="text-gray-400 text-sm">
-                                        Purchase:{" "}
-                                        {new Date(
-                                          batch.purchaseDate
-                                        ).toLocaleDateString()}
-                                      </p>
-
-                                      <p className="text-gray-400 text-sm">
-                                        Expiry:{" "}
-                                        {batch.expiryDate
-                                          ? new Date(
-                                              batch.expiryDate
-                                            ).toLocaleDateString()
-                                          : "—"}
-                                      </p>
-
-                                      {isExpired && (
-                                        <span className="text-xs bg-red-600 px-2 py-1 rounded text-white">
-                                          Expired
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    <div className="text-right space-y-1">
-                                      <p className="text-gray-300 text-sm">
-                                        Qty: {batch.quantity}
-                                      </p>
-                                      <p className="text-gray-300 text-sm">
-                                        Cost: ₹{batch.costPrice}
-                                      </p>
-                                      <p className="text-gray-300 text-sm">
-                                        Selling: ₹{batch.sellingPrice}
-                                      </p>
-                                      <p className="text-gray-300 text-sm">
-                                        MRP: ₹{batch.mrp}
-                                      </p>
-                                    </div>
+                                  <div className="space-y-1 text-sm">
+                                    <p className="font-medium text-gray-900 dark:text-white">
+                                      Batch: {batch.batchNumber}
+                                    </p>
+                                    <p className="text-gray-500 dark:text-gray-400">
+                                      Purchase: {new Date(batch.purchaseDate).toLocaleDateString()}
+                                    </p>
+                                    <p className="text-gray-500 dark:text-gray-400">
+                                      Expiry: {batch.expiryDate
+                                        ? new Date(batch.expiryDate).toLocaleDateString()
+                                        : "—"}
+                                    </p>
                                   </div>
 
-                                  <div className="mt-4 flex gap-3">
-                                    <button
-                                      onClick={() =>
-                                        handleEditBatch(batch)
-                                      }
-                                      className="text-xs bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-white"
-                                    >
-                                      Edit Qty
-                                    </button>
-
-                                    <button
-                                      onClick={() =>
-                                        handleDeleteBatch(
-                                          batch._id
-                                        )
-                                      }
-                                      className="text-xs bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white"
-                                    >
-                                      Delete
-                                    </button>
+                                  <div className="text-sm space-y-1 sm:text-right">
+                                    <p>Qty: {batch.quantity}</p>
+                                    <p>Cost: ₹{batch.costPrice}</p>
+                                    <p>Selling: ₹{batch.sellingPrice}</p>
+                                    <p>MRP: ₹{batch.mrp}</p>
                                   </div>
-                                </motion.div>
-                              );
-                            })
-                          )}
-                        </div>
+
+                                </div>
+
+                                <div className="mt-4 flex flex-wrap gap-3">
+                                  <button
+                                    onClick={() => handleEditBatch(batch)}
+                                    className="text-xs bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md"
+                                  >
+                                    Edit Qty
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteBatch(batch._id)}
+                                    className="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
 
-                  {/* Add Batch Form */}
+                  {/* ADD BATCH FORM */}
                   {activeProduct === product._id && (
-                    <div className="mt-6 border-t border-gray-700 pt-6">
-                      <div className="bg-[#111827] border border-gray-700 p-6 rounded-2xl shadow-inner">
-                        <h4 className="text-white font-semibold mb-4 text-lg">
+                    <div className="mt-6 border-t border-gray-200 dark:border-gray-800 pt-6">
+                      <div className="bg-gray-50 dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700">
+
+                        <h4 className="font-semibold mb-4">
                           Add New Batch
                         </h4>
 
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {[
-                            {
-                              name: "batchNumber",
-                              placeholder: "Batch Number",
-                              type: "text"
-                            },
+                            { name: "batchNumber", placeholder: "Batch Number", type: "text" },
                             { name: "purchaseDate", type: "date" },
                             { name: "expiryDate", type: "date" },
-                            {
-                              name: "costPrice",
-                              placeholder: "Cost Price",
-                              type: "number"
-                            },
-                            {
-                              name: "sellingPrice",
-                              placeholder: "Selling Price",
-                              type: "number"
-                            },
-                            {
-                              name: "mrp",
-                              placeholder: "MRP",
-                              type: "number"
-                            },
-                            {
-                              name: "quantity",
-                              placeholder: "Quantity",
-                              type: "number"
-                            }
+                            { name: "costPrice", placeholder: "Cost Price", type: "number" },
+                            { name: "sellingPrice", placeholder: "Selling Price", type: "number" },
+                            { name: "mrp", placeholder: "MRP", type: "number" },
+                            { name: "quantity", placeholder: "Quantity", type: "number" }
                           ].map((field) => (
                             <input
                               key={field.name}
@@ -341,21 +264,16 @@ function ProductInventoryTable() {
                               onChange={(e) =>
                                 setBatchForm({
                                   ...batchForm,
-                                  [field.name]:
-                                    e.target.value
+                                  [field.name]: e.target.value
                                 })
                               }
-                              className="bg-[#1f2937] border border-gray-600 text-white placeholder-gray-400 px-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 px-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                             />
                           ))}
 
                           <button
-                            onClick={() =>
-                              handleBatchSubmit(
-                                product._id
-                              )
-                            }
-                            className="col-span-3 bg-green-600 hover:bg-green-700 py-3 rounded-xl text-white font-semibold shadow-md"
+                            onClick={() => handleBatchSubmit(product._id)}
+                            className="lg:col-span-3 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium"
                           >
                             Save Batch
                           </button>
@@ -363,37 +281,35 @@ function ProductInventoryTable() {
                       </div>
                     </div>
                   )}
+
                 </div>
               );
             })}
           </div>
 
-          {/* Pagination */}
-          <div className="mt-8 flex justify-center items-center gap-4">
+          {/* PAGINATION */}
+          <div className="mt-8 flex flex-wrap justify-center items-center gap-4 text-sm">
             <button
               disabled={currentPage === 1}
-              onClick={() =>
-                setCurrentPage((prev) => prev - 1)
-              }
-              className="px-4 py-2 bg-gray-700 text-white rounded disabled:opacity-50"
+              onClick={() => setCurrentPage((prev) => prev - 1)}
+              className="px-4 py-2 bg-gray-200 dark:bg-gray-800 rounded-md disabled:opacity-50"
             >
               Previous
             </button>
 
-            <span className="text-white">
+            <span className="text-gray-700 dark:text-gray-300">
               Page {currentPage} of {totalPages}
             </span>
 
             <button
               disabled={currentPage === totalPages}
-              onClick={() =>
-                setCurrentPage((prev) => prev + 1)
-              }
-              className="px-4 py-2 bg-gray-700 text-white rounded disabled:opacity-50"
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+              className="px-4 py-2 bg-gray-200 dark:bg-gray-800 rounded-md disabled:opacity-50"
             >
               Next
             </button>
           </div>
+
         </>
       )}
     </div>

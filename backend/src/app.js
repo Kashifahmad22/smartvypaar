@@ -13,10 +13,11 @@ const saleRoutes = require("./routes/saleRoutes");
 const analyticsRoutes = require("./routes/analyticsRoutes");
 const errorMiddleware = require("./middleware/errorMiddleware");
 const profileRoutes = require("./routes/profileRoutes");
-const advancedAnalyticsRoutes = require("./routes/advancedAnalyticsRoutes");
+const partyRoutes = require("./routes/partyRoutes");
 const insightsRoutes = require("./routes/insightsRoutes");
-
-
+const ledgerRoutes = require("./routes/ledgerRoutes");
+const financeRoutes = require("./routes/financeRoutes");
+const financialAnalyticsRoutes = require("./routes/financialAnalyticsRoutes");
 /* ==============================
    ENVIRONMENT VALIDATION
 ============================== */
@@ -96,9 +97,11 @@ app.use("/api/products", productRoutes);
 app.use("/api/sales", saleRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/profile", profileRoutes);
-app.use("/api/analytics", advancedAnalyticsRoutes);
+app.use("/api/parties", partyRoutes);
 app.use("/api/insights", insightsRoutes);
-
+app.use("/api/ledger", ledgerRoutes);
+app.use("/api/finance", financeRoutes);
+app.use("/api/analytics", financialAnalyticsRoutes);
 
 /* ==============================
    GLOBAL ERROR HANDLER

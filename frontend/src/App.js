@@ -8,6 +8,9 @@ import Register from "./pages/auth/Register";
 import BusinessProfile from "./pages/BusinessProfile";
 import AddProductForm from "./components/AddProductForm";
 import Insights from "./pages/Insights";
+import Ledger from "./pages/Ledger";
+import SalesHistory from "./pages/SalesHistory";
+
 
 function App() {
   const token = localStorage.getItem("token");
@@ -27,10 +30,13 @@ function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="inventory" element={<Inventory />} />
-           <Route path="/add-product" element={<AddProductForm />} />
+          <Route path="/add-product" element={<AddProductForm />} />
           <Route path="sales" element={<Sales />} />
           <Route path="business" element={<BusinessProfile />} />
-         <Route path="/insights" element={<Insights />} />
+          <Route path="/insights" element={<Insights />} />
+          <Route path="/ledger" element={<Ledger />} />
+          <Route path="/sales-history" element={<SalesHistory />} />  
+        
         </Route>
 
       </Routes>
