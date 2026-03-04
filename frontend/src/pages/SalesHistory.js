@@ -112,7 +112,7 @@ function SalesHistory() {
   return (
     <div className="space-y-8">
 
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
           Sales History
@@ -122,10 +122,10 @@ function SalesHistory() {
         </p>
       </div>
 
-      {/* ================= FILTER CARD ================= */}
+      {/* FILTER CARD */}
       <div className="sv-card space-y-6">
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
@@ -139,7 +139,7 @@ function SalesHistory() {
                 setSearch(e.target.value);
                 setCurrentPage(1);
               }}
-              className="sv-input"
+              className="sv-input w-full"
             />
           </div>
 
@@ -153,7 +153,7 @@ function SalesHistory() {
                 setStatusFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="sv-input"
+              className="sv-input w-full"
             >
               <option value="ALL">All</option>
               <option value="PAID">Paid</option>
@@ -165,20 +165,22 @@ function SalesHistory() {
           <div className="flex items-end">
             <button
               onClick={exportCSV}
-              className="sv-btn-primary w-full md:w-auto"
+              className="sv-btn-primary w-full lg:w-auto"
             >
               Export CSV
             </button>
           </div>
+
         </div>
 
-        {/* Date Range */}
+        {/* DATE RANGE */}
         <div>
           <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-3">
             Date Range
           </label>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
             <div className="relative">
               <input
                 type="date"
@@ -187,11 +189,12 @@ function SalesHistory() {
                   setFromDate(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="sv-input pr-10"
+                className="sv-input w-full pr-14 appearance-none"
               />
+
               <Calendar
                 size={16}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
               />
             </div>
 
@@ -203,18 +206,20 @@ function SalesHistory() {
                   setToDate(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="sv-input pr-10"
+                className="sv-input w-full pr-14 appearance-none"
               />
+
               <Calendar
                 size={16}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
               />
             </div>
+
           </div>
         </div>
       </div>
 
-      {/* ================= DESKTOP TABLE ================= */}
+      {/* DESKTOP TABLE */}
       <div className="hidden md:block sv-card p-0 overflow-hidden">
         {filteredSales.length === 0 ? (
           <div className="p-10 text-center text-gray-500 dark:text-gray-400">
@@ -223,7 +228,9 @@ function SalesHistory() {
         ) : (
           <>
             <div className="overflow-x-auto">
+
               <table className="w-full text-sm">
+
                 <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                   <tr className="text-gray-600 dark:text-gray-300 uppercase text-xs tracking-wider">
                     <th className="px-6 py-4 text-left">Date</th>
@@ -243,18 +250,31 @@ function SalesHistory() {
 
                     return (
                       <tr key={sale._id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+
                         <td className="px-6 py-4">
                           {new Date(sale.createdAt).toLocaleDateString()}
                         </td>
+
                         <td className="px-6 py-4 font-medium">
                           {sale.product?.name || "Deleted Product"}
                         </td>
+
                         <td className="px-6 py-4">
                           {sale.customer?.name || "Walk-in"}
                         </td>
-                        <td className="px-6 py-4">₹ {sale.totalAmount}</td>
-                        <td className="px-6 py-4 text-green-600">₹ {paid}</td>
-                        <td className="px-6 py-4 text-yellow-600">₹ {due}</td>
+
+                        <td className="px-6 py-4">
+                          ₹ {sale.totalAmount}
+                        </td>
+
+                        <td className="px-6 py-4 text-green-600">
+                          ₹ {paid}
+                        </td>
+
+                        <td className="px-6 py-4 text-yellow-600">
+                          ₹ {due}
+                        </td>
+
                         <td className="px-6 py-4">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                             statusStyles[sale.paymentStatus] ||
@@ -263,14 +283,15 @@ function SalesHistory() {
                             {sale.paymentStatus}
                           </span>
                         </td>
+
                       </tr>
                     );
                   })}
                 </tbody>
+
               </table>
             </div>
 
-            {/* Pagination */}
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -280,11 +301,12 @@ function SalesHistory() {
               itemsPerPage={itemsPerPage}
               totalItems={filteredSales.length}
             />
+
           </>
         )}
       </div>
 
-      {/* ================= MOBILE CARD VIEW ================= */}
+      {/* MOBILE CARDS */}
       <div className="md:hidden space-y-4">
         {currentSales.map((sale) => {
           const paid = sale.paymentReceived || 0;
@@ -292,10 +314,12 @@ function SalesHistory() {
 
           return (
             <div key={sale._id} className="sv-card space-y-3">
+
               <div className="flex justify-between">
                 <span className="text-sm text-gray-500">
                   {new Date(sale.createdAt).toLocaleDateString()}
                 </span>
+
                 <span className={`px-2 py-1 rounded-full text-xs ${
                   statusStyles[sale.paymentStatus] ||
                   statusStyles.UNPAID
@@ -317,15 +341,18 @@ function SalesHistory() {
                   <p className="text-gray-400">Total</p>
                   <p>₹ {sale.totalAmount}</p>
                 </div>
+
                 <div>
                   <p className="text-gray-400">Paid</p>
                   <p className="text-green-600">₹ {paid}</p>
                 </div>
+
                 <div>
                   <p className="text-gray-400">Due</p>
                   <p className="text-yellow-600">₹ {due}</p>
                 </div>
               </div>
+
             </div>
           );
         })}
@@ -346,7 +373,7 @@ function SalesHistory() {
   );
 }
 
-/* ================= PAGINATION COMPONENT ================= */
+/* PAGINATION */
 
 function Pagination({
   currentPage,
@@ -359,12 +386,14 @@ function Pagination({
 }) {
   return (
     <div className="flex flex-col sm:flex-row justify-between items-center gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm">
+
       <div>
         Showing {startIndex + 1}–
         {Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems}
       </div>
 
       <div className="flex items-center gap-3">
+
         <button
           onClick={goPrev}
           disabled={currentPage === 1}
@@ -372,9 +401,11 @@ function Pagination({
         >
           Prev
         </button>
+
         <span>
           {currentPage} / {totalPages || 1}
         </span>
+
         <button
           onClick={goNext}
           disabled={currentPage === totalPages}
@@ -382,6 +413,7 @@ function Pagination({
         >
           Next
         </button>
+
       </div>
     </div>
   );

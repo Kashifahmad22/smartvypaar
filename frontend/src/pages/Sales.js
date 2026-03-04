@@ -1,11 +1,9 @@
 import RecordSaleForm from "../components/RecordSaleForm";
-import SalesHistoryTable from "../components/SalesHistoryTable";
 
 function Sales() {
   return (
-    <div className="space-y-8">
-      <RecordSaleForm onSaleRecorded={() => window.location.reload()} />
-      <SalesHistoryTable />
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      <RecordSaleForm />
     </div>
   );
 }

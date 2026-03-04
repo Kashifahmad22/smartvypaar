@@ -91,7 +91,6 @@ function RecordSaleForm({ onSaleRecorded }) {
         invoiceNumber,
       });
 
-      // Reset
       setQuantity("");
       setProductId("");
       setCustomerId("");
@@ -109,14 +108,14 @@ function RecordSaleForm({ onSaleRecorded }) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-0 space-y-8">
 
       {/* ================= HEADER ================= */}
-      <div>
+      <div className="space-y-2">
         <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
           Record Sale
         </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           Create a sales entry and manage payment details.
         </p>
       </div>
@@ -125,16 +124,18 @@ function RecordSaleForm({ onSaleRecorded }) {
 
         {/* ================= PRODUCT SECTION ================= */}
         <div className="sv-card space-y-5">
+
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             Product Details
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+
             <select
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
               required
-              className="sv-input"
+              className="sv-input w-full"
             >
               <option value="">Select Product</option>
               {products.map((p) => (
@@ -151,13 +152,17 @@ function RecordSaleForm({ onSaleRecorded }) {
               onChange={(e) => setQuantity(e.target.value)}
               required
               min="1"
-              className="sv-input"
+              className="sv-input w-full"
             />
+
           </div>
+
         </div>
 
         {/* ================= CUSTOMER SECTION ================= */}
+
         <div className="sv-card space-y-5">
+
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             Customer Details
           </h3>
@@ -173,7 +178,7 @@ function RecordSaleForm({ onSaleRecorded }) {
                 setShowNewCustomer(false);
               }
             }}
-            className="sv-input"
+            className="sv-input w-full"
           >
             <option value="">Walk-in Customer</option>
             {customers.map((c) => (
@@ -185,53 +190,54 @@ function RecordSaleForm({ onSaleRecorded }) {
           </select>
 
           {showNewCustomer && (
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
               <input
                 type="text"
                 placeholder="Customer Name"
                 value={newCustomerName}
-                onChange={(e) =>
-                  setNewCustomerName(e.target.value)
-                }
-                className="sv-input"
+                onChange={(e) => setNewCustomerName(e.target.value)}
+                className="sv-input w-full"
               />
+
               <input
                 type="text"
                 placeholder="Phone"
                 value={newCustomerPhone}
-                onChange={(e) =>
-                  setNewCustomerPhone(e.target.value)
-                }
-                className="sv-input"
+                onChange={(e) => setNewCustomerPhone(e.target.value)}
+                className="sv-input w-full"
               />
+
             </div>
+
           )}
+
         </div>
 
         {/* ================= PAYMENT SECTION ================= */}
+
         <div className="sv-card space-y-5">
+
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             Payment Details
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+
             <input
               type="number"
               placeholder="Payment Received"
               value={paymentReceived}
-              onChange={(e) =>
-                setPaymentReceived(e.target.value)
-              }
+              onChange={(e) => setPaymentReceived(e.target.value)}
               min="0"
-              className="sv-input"
+              className="sv-input w-full"
             />
 
             <select
               value={paymentMethod}
-              onChange={(e) =>
-                setPaymentMethod(e.target.value)
-              }
-              className="sv-input"
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className="sv-input w-full"
             >
               <option value="CASH">Cash</option>
               <option value="UPI">UPI</option>
@@ -244,49 +250,71 @@ function RecordSaleForm({ onSaleRecorded }) {
               type="text"
               placeholder="Invoice Number (Optional)"
               value={invoiceNumber}
-              onChange={(e) =>
-                setInvoiceNumber(e.target.value)
-              }
-              className="sv-input"
+              onChange={(e) => setInvoiceNumber(e.target.value)}
+              className="sv-input w-full"
             />
+
           </div>
+
         </div>
 
         {/* ================= SUMMARY ================= */}
+
         {calculatedAmount > 0 && (
-          <div className="sv-card space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Total Amount</span>
-              <span className="font-semibold">
+
+          <div className="sv-card space-y-4 text-sm">
+
+            <div className="flex items-center justify-between flex-wrap gap-2">
+
+              <span className="text-gray-500">
+                Total Amount
+              </span>
+
+              <span className="font-semibold text-base">
                 ₹ {calculatedAmount}
               </span>
+
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+
               <span className="text-gray-500">
                 Payment Status
               </span>
+
               <span className="font-semibold text-indigo-600 dark:text-indigo-400">
                 {paymentStatus}
               </span>
+
             </div>
 
-            <div className="flex justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+
               <span className="text-gray-500">
                 Amount Due
               </span>
+
               <span className="font-semibold text-yellow-600 dark:text-yellow-400">
                 ₹ {amountDue < 0 ? 0 : amountDue}
               </span>
+
             </div>
+
           </div>
+
         )}
 
         {/* ================= SUBMIT ================= */}
-        <button type="submit" className="sv-btn-primary w-full">
+
+        <button
+          type="submit"
+          className="sv-btn-primary w-full py-3 text-base sm:text-sm"
+        >
           Record Sale
         </button>
+
       </form>
+
     </div>
   );
 }

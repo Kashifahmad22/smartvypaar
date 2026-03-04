@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 
+import {
+  TrendingUp,
+  AlertTriangle,
+  Shield
+} from "lucide-react";
+
 function Insights() {
   const [summary, setSummary] = useState(null);
   const [reorder, setReorder] = useState([]);
@@ -39,52 +45,60 @@ function Insights() {
   }
 
   return (
-    <div className="space-y-14">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
 
-      {/* ================= EXECUTIVE SUMMARY ================= */}
+      {/* EXECUTIVE SUMMARY */}
+
       {summary && (
-        <div className="relative bg-gradient-to-br from-white to-gray-50 dark:from-[#111827] dark:to-[#0f172a] border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-3xl shadow-lg">
+        <div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-3xl shadow-sm p-6 sm:p-8">
 
-          <div className="mb-10">
-            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
+          <div className="mb-8">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight">
               Business Intelligence
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
+
+            <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm max-w-xl">
               Operational risk signals, inventory exposure and predictive revenue insights.
             </p>
           </div>
 
-          {/* Core Signals */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <InsightStat label="Stockout Risks" value={summary.stockoutRisks} accent="red" />
-            <InsightStat label="Dead Stock" value={summary.deadStockCount} accent="yellow" />
-            <InsightStat label="Slow Moving" value={summary.slowMovingCount} accent="blue" />
-            <InsightStat label="Fast Moving" value={summary.fastMovingCount} accent="green" />
+          {/* SIGNAL METRICS */}
+
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+
+            <InsightStat label="Stockout Risks" value={summary.stockoutRisks} />
+            <InsightStat label="Dead Stock" value={summary.deadStockCount} />
+            <InsightStat label="Slow Moving" value={summary.slowMovingCount} />
+            <InsightStat label="Fast Moving" value={summary.fastMovingCount} />
+
           </div>
 
-          {/* Financial Exposure */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+          {/* FINANCIAL METRICS */}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mt-8">
+
             <InsightStat
               label="Inventory Value"
               value={`₹ ${summary.inventoryValue?.toLocaleString()}`}
-              accent="purple"
             />
+
             <InsightStat
               label="Dead Stock Value"
               value={`₹ ${summary.deadStockValue?.toLocaleString()}`}
-              accent="red"
             />
+
             <InsightStat
               label="7-Day Revenue Forecast"
               value={`₹ ${summary.projected7DayRevenue?.toLocaleString()}`}
-              accent="emerald"
             />
+
           </div>
 
         </div>
       )}
 
-      {/* ================= TOP MARGIN ================= */}
+      {/* TOP MARGIN */}
+
       {summary?.top3MarginProducts?.length > 0 && (
         <Section title="Top Margin Contributors (30 Days)">
           {summary.top3MarginProducts.map((item, index) => (
@@ -98,8 +112,10 @@ function Insights() {
         </Section>
       )}
 
-      {/* ================= REORDER ================= */}
+      {/* REORDER */}
+
       <Section title="Reorder Risk Priority">
+
         {reorder.length === 0 ? (
           <Empty text="No immediate stockout risks." />
         ) : (
@@ -112,10 +128,13 @@ function Insights() {
             />
           ))
         )}
+
       </Section>
 
-      {/* ================= VELOCITY ================= */}
+      {/* VELOCITY */}
+
       <Section title="Velocity Classification">
+
         {velocity.length === 0 ? (
           <Empty text="No velocity data available." />
         ) : (
@@ -128,69 +147,136 @@ function Insights() {
             />
           ))
         )}
+
       </Section>
 
     </div>
   );
 }
 
-/* ---------- COMPONENTS ---------- */
+
+/* SECTION */
 
 function Section({ title, children }) {
   return (
-    <div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-2xl shadow-sm">
-      <h2 className="text-xl font-semibold tracking-tight mb-6">
+    <div className="bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-6 sm:p-8">
+
+      <h2 className="text-lg sm:text-xl font-semibold mb-6">
         {title}
       </h2>
+
       <div className="divide-y divide-gray-200 dark:divide-gray-800">
         {children}
       </div>
+
     </div>
   );
 }
 
-function InsightStat({ label, value, accent }) {
-  const accentMap = {
-    red: "text-red-500",
-    yellow: "text-yellow-500",
-    blue: "text-blue-500",
-    green: "text-green-500",
-    purple: "text-purple-500",
-    emerald: "text-emerald-500"
-  };
+
+/* SUMMARY CARD */
+
+function InsightStat({ label, value }) {
+
+  const greenMetrics = [
+    "Inventory Value",
+    "7-Day Revenue Forecast"
+  ];
+
+  const isGreen = greenMetrics.includes(label);
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
+    <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-5">
+
       <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
         {label}
       </p>
-      <p className={`text-2xl font-semibold ${accentMap[accent]}`}>
+
+      <p
+        className={`text-xl sm:text-2xl font-semibold ${
+          isGreen
+            ? "text-green-600 dark:text-green-400"
+            : "text-gray-900 dark:text-white"
+        }`}
+      >
         {value}
       </p>
+
     </div>
   );
 }
 
-function Row({ title, subtitle, right }) {
-  return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-4 gap-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition rounded-lg px-2">
 
-      <div>
-        <p className="font-medium text-gray-900 dark:text-white">
+/* ROW */
+
+function Row({ title, subtitle, right }) {
+
+  const renderIndicator = () => {
+
+    if (right === "FAST_MOVING") {
+      return (
+        <span title="Fast Moving" className="text-green-600">
+          <TrendingUp size={18} />
+        </span>
+      );
+    }
+
+    if (right === "HIGH") {
+      return (
+        <span title="High Risk" className="text-red-500">
+          <AlertTriangle size={18} />
+        </span>
+      );
+    }
+
+    if (right === "MEDIUM") {
+      return (
+        <span title="Medium Risk" className="text-yellow-500">
+          <AlertTriangle size={18} />
+        </span>
+      );
+    }
+
+    if (right === "LOW") {
+      return (
+        <span title="Low Risk" className="text-green-500">
+          <Shield size={18} />
+        </span>
+      );
+    }
+
+    return (
+      <span className="text-indigo-600 dark:text-indigo-400 text-sm">
+        {right}
+      </span>
+    );
+  };
+
+  return (
+    <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between gap-3 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition rounded-lg px-2">
+
+      <div className="min-w-0 flex-1">
+
+        <p className="font-medium text-gray-900 dark:text-white truncate">
           {title}
         </p>
+
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {subtitle}
         </p>
+
       </div>
 
-      <div className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
-        {right}
+      <div className="flex-shrink-0 flex items-center">
+        {renderIndicator()}
       </div>
 
     </div>
   );
 }
+
+
+/* EMPTY */
 
 function Empty({ text }) {
   return (
