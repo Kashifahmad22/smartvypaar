@@ -9,10 +9,12 @@ const AppError = require("../utils/AppError");
 // CREATE SALE (Inventory + Ledger Engine)
 // =====================================
 exports.createSale = async (req, res, next) => {
+
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
+
     const parsed = createSaleSchema.safeParse(req.body);
 
     if (!parsed.success) {
@@ -56,22 +58,29 @@ exports.createSale = async (req, res, next) => {
     const sortedBatches = product.batches
       .filter(b => b.quantity > 0)
       .sort((a, b) => {
+
         if (a.expiryDate && b.expiryDate) {
           return new Date(a.expiryDate) - new Date(b.expiryDate);
         }
+
         if (a.expiryDate) return -1;
         if (b.expiryDate) return 1;
+
         return new Date(a.purchaseDate) - new Date(b.purchaseDate);
+
       });
 
     for (const batch of sortedBatches) {
+
       if (remainingQty <= 0) break;
 
       const deductQty = Math.min(batch.quantity, remainingQty);
 
-      const amount = deductQty * batch.sellingPrice;
-      const profit =
-        deductQty * (batch.sellingPrice - batch.costPrice);
+      const amount = Math.round(deductQty * batch.sellingPrice);
+
+      const profit = Math.round(
+        deductQty * (batch.sellingPrice - batch.costPrice)
+      );
 
       batch.quantity -= deductQty;
       remainingQty -= deductQty;
@@ -87,6 +96,7 @@ exports.createSale = async (req, res, next) => {
         sellingPrice: batch.sellingPrice,
         profit
       });
+
     }
 
     if (remainingQty > 0) {
@@ -100,17 +110,27 @@ exports.createSale = async (req, res, next) => {
     await product.save({ session });
 
     // ================= PAYMENT CALCULATION =================
-    const amountPaid = Number(paymentReceived) || 0;
+
+    const amountPaid = Math.round(Number(paymentReceived) || 0);
 
     if (amountPaid > totalAmount) {
       throw new AppError("Payment cannot exceed sale amount", 400);
     }
 
-    const amountDue = totalAmount - amountPaid;
+    const amountDue = Math.max(
+      0,
+      Math.round(totalAmount - amountPaid)
+    );
 
     let paymentStatus = "UNPAID";
-    if (amountDue === 0) paymentStatus = "PAID";
-    else if (amountPaid > 0) paymentStatus = "PARTIAL";
+
+    if (amountPaid >= totalAmount) {
+      paymentStatus = "PAID";
+    }
+
+    else if (amountPaid > 0) {
+      paymentStatus = "PARTIAL";
+    }
 
     const [sale] = await Sale.create(
       [{
@@ -134,11 +154,11 @@ exports.createSale = async (req, res, next) => {
     );
 
     // =====================================
-    // 🔥 LEDGER ENGINE (Single Source of Truth)
+    // 🔥 LEDGER ENGINE
     // =====================================
+
     if (customerId) {
 
-      // 1️⃣ SALE ENTRY
       await processLedgerEntry({
         ownerId: req.user._id,
         partyId: customerId,
@@ -153,8 +173,8 @@ exports.createSale = async (req, res, next) => {
         session
       });
 
-      // 2️⃣ PAYMENT ENTRY
       if (amountPaid > 0) {
+
         await processLedgerEntry({
           ownerId: req.user._id,
           partyId: customerId,
@@ -165,7 +185,9 @@ exports.createSale = async (req, res, next) => {
           paymentMethod,
           session
         });
+
       }
+
     }
 
     await session.commitTransaction();
@@ -179,18 +201,27 @@ exports.createSale = async (req, res, next) => {
         product.totalStock <= product.reorderThreshold
     });
 
-  } catch (error) {
+  }
+
+  catch (error) {
+
     await session.abortTransaction();
     session.endSession();
+
     next(error);
+
   }
+
 };
 
 // =====================================
 // GET ALL SALES
 // =====================================
+
 exports.getAllSales = async (req, res, next) => {
+
   try {
+
     const sales = await Sale.find({
       owner: req.user._id
     })
@@ -201,7 +232,10 @@ exports.getAllSales = async (req, res, next) => {
 
     res.json(sales);
 
-  } catch (error) {
+  }
+
+  catch (error) {
     next(error);
   }
+
 };

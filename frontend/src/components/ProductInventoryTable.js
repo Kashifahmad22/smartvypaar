@@ -125,11 +125,10 @@ function ProductInventoryTable() {
                     <div className="flex flex-wrap items-center gap-3">
 
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          isLow
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${isLow
                             ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400"
                             : "bg-green-100 text-green-600 dark:bg-green-900/40 dark:text-green-400"
-                        }`}
+                          }`}
                       >
                         {isLow ? "Low Stock" : "Healthy"}
                       </span>
@@ -185,11 +184,10 @@ function ProductInventoryTable() {
                             return (
                               <div
                                 key={batch._id}
-                                className={`p-4 rounded-xl border ${
-                                  isExpired
+                                className={`p-4 rounded-xl border ${isExpired
                                     ? "border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20"
                                     : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
-                                }`}
+                                  }`}
                               >
                                 <div className="grid sm:grid-cols-2 gap-4">
 
