@@ -7,6 +7,7 @@ import {
 } from "../services/api";
 
 function RecordSaleForm({ onSaleRecorded }) {
+
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
 
@@ -25,53 +26,106 @@ function RecordSaleForm({ onSaleRecorded }) {
   const [calculatedAmount, setCalculatedAmount] = useState(0);
 
   /* ================= FETCH DATA ================= */
+
   useEffect(() => {
+
     const fetchData = async () => {
+
       try {
+
         const productRes = await getAllProducts(1, 100);
         setProducts(productRes.data.products || []);
 
         const customerRes = await getParties("CUSTOMER");
         setCustomers(customerRes.data.data || []);
+
       } catch (err) {
         console.error(err);
       }
+
     };
 
     fetchData();
+
   }, []);
 
   /* ================= AUTO CALCULATE ================= */
+
   useEffect(() => {
-    const selectedProduct = products.find((p) => p._id === productId);
+
+    const selectedProduct = products.find(
+      (p) => p._id === productId
+    );
 
     if (selectedProduct && quantity > 0) {
+
+      // 🔥 FIX: choose first batch that actually has stock
+      const activeBatch = selectedProduct.batches
+        ?.filter((b) => b.quantity > 0)
+        ?.sort(
+          (a, b) =>
+            new Date(a.purchaseDate) -
+            new Date(b.purchaseDate)
+        )[0];
+
       const price =
-        selectedProduct.batches?.[0]?.sellingPrice || 0;
-      setCalculatedAmount(price * quantity);
-    } else {
-      setCalculatedAmount(0);
+        Number(activeBatch?.sellingPrice) || 0;
+
+      const total = Math.round(
+        price * Number(quantity)
+      );
+
+      setCalculatedAmount(total);
+
     }
+
+    else {
+
+      setCalculatedAmount(0);
+
+    }
+
   }, [productId, quantity, products]);
 
-  const amountPaid = Number(paymentReceived) || 0;
-  const amountDue = calculatedAmount - amountPaid;
+  /* ================= PAYMENT CALCULATIONS ================= */
+
+  const amountPaid = Math.round(
+    Number(paymentReceived) || 0
+  );
+
+  const amountDue = Math.max(
+    0,
+    Math.round(calculatedAmount - amountPaid)
+  );
 
   let paymentStatus = "UNPAID";
+
   if (calculatedAmount > 0) {
-    if (amountDue === 0) paymentStatus = "PAID";
-    else if (amountPaid > 0) paymentStatus = "PARTIAL";
+
+    if (amountPaid >= calculatedAmount) {
+      paymentStatus = "PAID";
+    }
+
+    else if (amountPaid > 0) {
+      paymentStatus = "PARTIAL";
+    }
+
   }
 
   /* ================= SUBMIT ================= */
+
   const handleSubmit = async (e) => {
+
     e.preventDefault();
+
     if (!productId || !quantity) return;
 
     try {
+
       let finalCustomerId = customerId;
 
       if (showNewCustomer && newCustomerName) {
+
         const res = await createParty({
           name: newCustomerName,
           phone: newCustomerPhone,
@@ -80,16 +134,23 @@ function RecordSaleForm({ onSaleRecorded }) {
         });
 
         finalCustomerId = res.data.data._id;
+
       }
 
       await createSale({
+
         productId,
         quantity: Number(quantity),
         customerId: finalCustomerId || undefined,
-        paymentReceived: Number(paymentReceived) || 0,
+        paymentReceived: Math.round(
+          Number(paymentReceived) || 0
+        ),
         paymentMethod,
         invoiceNumber,
+
       });
+
+      /* RESET FORM */
 
       setQuantity("");
       setProductId("");
@@ -101,28 +162,40 @@ function RecordSaleForm({ onSaleRecorded }) {
       setNewCustomerPhone("");
 
       if (onSaleRecorded) onSaleRecorded();
-    } catch (err) {
+
+    }
+
+    catch (err) {
+
       console.error(err);
       alert("Error recording sale");
+
     }
+
   };
 
   return (
+
     <div className="max-w-5xl mx-auto px-3 sm:px-4 lg:px-0 space-y-8">
 
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
+
       <div className="space-y-2">
+
         <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">
           Record Sale
         </h2>
+
         <p className="text-sm text-gray-500 dark:text-gray-400">
           Create a sales entry and manage payment details.
         </p>
+
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
 
-        {/* ================= PRODUCT SECTION ================= */}
+        {/* PRODUCT SECTION */}
+
         <div className="sv-card space-y-5">
 
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
@@ -137,19 +210,26 @@ function RecordSaleForm({ onSaleRecorded }) {
               required
               className="sv-input w-full"
             >
+
               <option value="">Select Product</option>
+
               {products.map((p) => (
+
                 <option key={p._id} value={p._id}>
                   {p.name} (Stock: {p.totalStock ?? 0})
                 </option>
+
               ))}
+
             </select>
 
             <input
               type="number"
               placeholder="Quantity"
               value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
+              onChange={(e) =>
+                setQuantity(e.target.value)
+              }
               required
               min="1"
               className="sv-input w-full"
@@ -159,7 +239,7 @@ function RecordSaleForm({ onSaleRecorded }) {
 
         </div>
 
-        {/* ================= CUSTOMER SECTION ================= */}
+        {/* CUSTOMER SECTION */}
 
         <div className="sv-card space-y-5">
 
@@ -170,23 +250,37 @@ function RecordSaleForm({ onSaleRecorded }) {
           <select
             value={customerId}
             onChange={(e) => {
+
               if (e.target.value === "NEW") {
                 setShowNewCustomer(true);
                 setCustomerId("");
-              } else {
+              }
+
+              else {
                 setCustomerId(e.target.value);
                 setShowNewCustomer(false);
               }
+
             }}
             className="sv-input w-full"
           >
-            <option value="">Walk-in Customer</option>
+
+            <option value="">
+              Walk-in Customer
+            </option>
+
             {customers.map((c) => (
+
               <option key={c._id} value={c._id}>
                 {c.name}
               </option>
+
             ))}
-            <option value="NEW">+ Add New Customer</option>
+
+            <option value="NEW">
+              + Add New Customer
+            </option>
+
           </select>
 
           {showNewCustomer && (
@@ -197,7 +291,9 @@ function RecordSaleForm({ onSaleRecorded }) {
                 type="text"
                 placeholder="Customer Name"
                 value={newCustomerName}
-                onChange={(e) => setNewCustomerName(e.target.value)}
+                onChange={(e) =>
+                  setNewCustomerName(e.target.value)
+                }
                 className="sv-input w-full"
               />
 
@@ -205,7 +301,9 @@ function RecordSaleForm({ onSaleRecorded }) {
                 type="text"
                 placeholder="Phone"
                 value={newCustomerPhone}
-                onChange={(e) => setNewCustomerPhone(e.target.value)}
+                onChange={(e) =>
+                  setNewCustomerPhone(e.target.value)
+                }
                 className="sv-input w-full"
               />
 
@@ -215,7 +313,7 @@ function RecordSaleForm({ onSaleRecorded }) {
 
         </div>
 
-        {/* ================= PAYMENT SECTION ================= */}
+        {/* PAYMENT SECTION */}
 
         <div className="sv-card space-y-5">
 
@@ -229,28 +327,36 @@ function RecordSaleForm({ onSaleRecorded }) {
               type="number"
               placeholder="Payment Received"
               value={paymentReceived}
-              onChange={(e) => setPaymentReceived(e.target.value)}
+              onChange={(e) =>
+                setPaymentReceived(e.target.value)
+              }
               min="0"
               className="sv-input w-full"
             />
 
             <select
               value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              onChange={(e) =>
+                setPaymentMethod(e.target.value)
+              }
               className="sv-input w-full"
             >
+
               <option value="CASH">Cash</option>
               <option value="UPI">UPI</option>
               <option value="BANK">Bank</option>
               <option value="CARD">Card</option>
               <option value="OTHER">Other</option>
+
             </select>
 
             <input
               type="text"
               placeholder="Invoice Number (Optional)"
               value={invoiceNumber}
-              onChange={(e) => setInvoiceNumber(e.target.value)}
+              onChange={(e) =>
+                setInvoiceNumber(e.target.value)
+              }
               className="sv-input w-full"
             />
 
@@ -258,53 +364,44 @@ function RecordSaleForm({ onSaleRecorded }) {
 
         </div>
 
-        {/* ================= SUMMARY ================= */}
+        {/* SUMMARY */}
 
         {calculatedAmount > 0 && (
 
           <div className="sv-card space-y-4 text-sm">
 
-            <div className="flex items-center justify-between flex-wrap gap-2">
-
+            <div className="flex justify-between flex-wrap gap-2">
               <span className="text-gray-500">
                 Total Amount
               </span>
-
               <span className="font-semibold text-base">
                 ₹ {calculatedAmount}
               </span>
-
             </div>
 
-            <div className="flex items-center justify-between flex-wrap gap-2">
-
+            <div className="flex justify-between flex-wrap gap-2">
               <span className="text-gray-500">
                 Payment Status
               </span>
-
               <span className="font-semibold text-indigo-600 dark:text-indigo-400">
                 {paymentStatus}
               </span>
-
             </div>
 
-            <div className="flex items-center justify-between flex-wrap gap-2">
-
+            <div className="flex justify-between flex-wrap gap-2">
               <span className="text-gray-500">
                 Amount Due
               </span>
-
               <span className="font-semibold text-yellow-600 dark:text-yellow-400">
-                ₹ {amountDue < 0 ? 0 : amountDue}
+                ₹ {amountDue}
               </span>
-
             </div>
 
           </div>
 
         )}
 
-        {/* ================= SUBMIT ================= */}
+        {/* SUBMIT */}
 
         <button
           type="submit"
@@ -316,7 +413,9 @@ function RecordSaleForm({ onSaleRecorded }) {
       </form>
 
     </div>
+
   );
+
 }
 
 export default RecordSaleForm;
