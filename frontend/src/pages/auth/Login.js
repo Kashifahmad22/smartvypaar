@@ -12,7 +12,7 @@ function Login() {
 
     try {
       const res = await axios.post(
-        "http://10.154.218.29:3000/api/auth/login",
+        "http://10.154.218.29:5000/api/auth/login",
         { email, password }
       );
 
