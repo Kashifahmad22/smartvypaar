@@ -13,7 +13,7 @@ function Register() {
 
     try {
       await axios.post(
-        "http://localhost:5000/api/auth/register",
+        "http://10.154.218.29:5000/api/auth/register",
         { shopName, email, password }
       );
 
