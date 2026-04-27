@@ -1,6 +1,6 @@
 import { useState } from "react";
-import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import API from "../../services/api"; // ✅ use centralized API
 
 function Register() {
   const [shopName, setShopName] = useState("");
@@ -12,14 +12,16 @@ function Register() {
     e.preventDefault();
 
     try {
-      await axios.post(
-        "http://localhost:5000/api/auth/register",
-        { shopName, email, password }
-      );
+      await API.post("/auth/register", {
+        shopName,
+        email,
+        password,
+      });
 
       alert("Registered successfully");
       navigate("/login");
     } catch (error) {
+      console.error(error);
       alert("Registration failed");
     }
   };
